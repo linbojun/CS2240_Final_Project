@@ -12,7 +12,7 @@ public:
     double getDistance(int particle, int neighbor) const;
 
     std::vector<int>& getParticles() const;
-    std::vector<int>& getNeighbors(float dist) const;
+    std::vector<int>& getNeighbors(int particle, float dist) const;
 };
 
 class MagneticField
