@@ -17,8 +17,10 @@ void MagneticField::buildProblem(SpMat& mat,const SPH &particles){
 
     for (const int &particle: particles.getParticles()){
         for (const int& neighbor: particles.getNeighbors(particle, 2.0 * m_h)){
-            Vector3f r_ik = particles.getDisplacement(particle, neighbor);
-            float l_ik = particles.getDistance(particle, neighbor);
+            
+            Vector3f r_ik = particles.getPos(particle) -  particles.getPos(neighbor);
+            float l_ik = r_ik.norm();
+
             float W_avr_ik = W_avr(l_ik);
             float W_ik = W_avr(l_ik);
 

@@ -8,8 +8,7 @@ typedef Eigen::Triplet<double> T;
 class SPH 
 {
 public:
-    Eigen::Vector3f getDisplacement(int particle, int neighbor) const ;
-    double getDistance(int particle, int neighbor) const;
+    Eigen::Vector3f getPos(int particle) const ;
 
     std::vector<int>& getParticles() const;
     std::vector<int>& getNeighbors(int particle, float dist) const;
