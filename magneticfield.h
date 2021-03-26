@@ -31,7 +31,7 @@ private:
     const double W (const double q) const;
     const double W_avr (const double q) const;
 
-    void buildProblem(SpMat &mat,const SPH &particles);
+    void buildProblem(Eigen::MatrixXd &mat,const SPH &particles);
     float getG (const SPH &particles, int i, int j, int k, int l);
 
 };

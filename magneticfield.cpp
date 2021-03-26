@@ -11,12 +11,10 @@ MagneticField::MagneticField(double h):
 }
 
 
-void MagneticField::buildProblem(SpMat& mat,const SPH &particles){
-    
-    vector<T> coefficients; 
+void MagneticField::buildProblem(MatrixXd& mat,const SPH &particles){
 
-    for (const int &particle: particles.getParticles()){
-        for (const int& neighbor: particles.getNeighbors(particle, 2.0 * m_h)){
+    for (const int &particle: particles.getParticles()) {
+        for (const int& neighbor: particles.getParticles()) {
             
             Vector3f r_ik = particles.getPos(particle) -  particles.getPos(neighbor);
             float l_ik = r_ik.norm();
@@ -34,14 +32,12 @@ void MagneticField::buildProblem(SpMat& mat,const SPH &particles){
                         int idx1 = particle * 3 + j;
                         int idx2 = neighbor * 3 + l;
 
-                        coefficients.push_back(T(idx1, idx2, G));
+                        mat(idx1, idx2) = G;
                     }
                 }
             }
         }
     }
-
-    mat.setFromTriplets(coefficients.begin(), coefficients.end());
 }
 
 
@@ -65,7 +61,7 @@ const double MagneticField::w_avr (const double q) const {
         return -3.0/(4.0 * M_PI * pow(q, 3.0)) * (pow(q, 6.0)/6.0 - 6.0 * pow(q, 5.0)/5.0 
         + 3.0 * pow(q, 4.0) - 8.0 * pow(q, 3.0) / 3.0+ 1.0/15.0);
     } else {
-        return 0.0;
+        return 3.0/(4.0 * pow(q, 3.0));
     } 
 }
 
