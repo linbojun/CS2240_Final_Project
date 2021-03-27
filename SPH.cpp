@@ -51,133 +51,145 @@ SPH::SPH(int n)
 	}
 }
 
-// void SPH::compute_all_Densities()
-// {
-//     for(unsigned int i = 0; i < m_particle_list.size(); i++)
-//     {
-//         shared_ptr<particle> cur = m_particle_list.at(i);
-//         cur->density += single_density(cur->position);
-//     }
-// }
-
-
-// void SPH::compute_all_Pressure()
-// {
-//     for(unsigned int i = 0; i < m_particle_list.size(); i++)
-//     {
-//          shared_ptr<particle> cur = m_particle_list.at(i);
-//          cur->pressure = single_pressure(cur);
-//     }
-// }
-
-Vector3d SPH::single_Viscousity(shared_ptr<particle> cur)
+vector<shared_ptr<particle>> SPH::find_neighs(shared_ptr<particle> cur)
 {
-    Vector3d accerlation(0,0,0);
-    auto ra = cur->position;
-    auto va = cur->velocity;
-    auto pa = cur->pressure;
-    auto rho_a = cur->density;
-    for (unsigned int pid = 0; pid < m_particle_list.size(); pid++)
+    vector<shared_ptr<particle>> neighs;
+    for(auto ptcl: m_particle_list)
     {
-        shared_ptr<particle> neigh = m_particle_list.at(pid);
-        if((neigh->position - ra).norm() < _neighbor_radius)
+        if(ptcl.get() == cur.get())
+            continue;
+        auto dist = ptcl->position - cur->position;
+        if(dist.norm() < _neighbor_radius)
         {
-            auto rb = neigh->position;
-            auto vb = neigh->velocity;
-            auto rho_b = neigh->density;
-            auto rab = ra - rb;
-            accerlation += _mu / rho_a * neigh->mass * (vb-va) / rho_b * _delta_square_W(rab, _neighbor_radius);
+            neighs.push_back(ptcl);
         }
     }
-    return accerlation;
-}
-
-Vector3d SPH::single_Momentum(shared_ptr<particle> cur)
-{
-    Vector3d accerlation(0,0,0);
-    auto ra = cur->position;
-    auto pa = cur->pressure;
-    auto rho_a = cur->density;
-    for (unsigned int pid = 0; pid < m_particle_list.size(); pid++)
-    {
-        shared_ptr<particle> neigh = m_particle_list.at(pid);
-        if((neigh->position - ra).norm() < _neighbor_radius)
-        {
-            auto rb = neigh->position;
-            auto pb = neigh->pressure;
-            auto rho_b = neigh->density;
-            auto rab = ra - rb;
-            accerlation += neigh->mass * (pa / pow(rho_a, 2) + pb / pow(rho_b, 2)) * _delta_W(rab, _neighbor_radius);
-        }
-    }
-    return accerlation;
+    return neighs;
 
 }
 
-Vector3d SPH::single_dvdt(shared_ptr<particle> cur)
+
+void SPH::euler_step()
+{
+    for(unsigned int i = 0; i < m_particle_list.size(); i++)
+    {
+        shared_ptr<particle> cur = m_particle_list.at(i);
+        cur->neighs  = find_neighs(cur);
+        auto dvdt = total_dvdt(cur);
+        cur->drhodt = single_drhodt(cur);
+        cur->dvdt = dvdt;
+    }
+    for(unsigned int i = 0; i < m_particle_list.size(); i++)
+    {
+        shared_ptr<particle> cur = m_particle_list.at(i);
+        cur->position += 0.5 * _dt * cur->velocity;
+        cur->velocity += 0.5 * _dt * cur->dvdt;
+        cur->density += _dt * cur->drhodt;
+        cur->pressure = single_pressure(cur);
+    }
+    for(unsigned int i = 0; i < m_particle_list.size(); i++)
+    {
+        shared_ptr<particle> cur = m_particle_list.at(i);
+        cur->position += _dt * cur->velocity;
+        cur->velocity += _dt * cur->dvdt;
+    }
+    boundry_collision();
+}
+
+Vector3d SPH::total_dvdt(shared_ptr<particle> cur)
+{
+    Vector3d dvdt(0,0,0);
+    dvdt += momentum_dvdt(cur);
+    dvdt += viscosity_dvdt(cur);
+    return dvdt;
+}
+
+Vector3d SPH::momentum_dvdt(shared_ptr<particle> cur)
 {
     Vector3d gravity(0,-0.1,0);
-    Vector3d tot_acc(0,0,0);
-    tot_acc = gravity - single_Momentum(cur) + single_Viscousity(cur);
-    return tot_acc;
+    Vector3d dvdt(0,0,0);
+    auto ra = cur->position;
+    auto pa = cur->pressure;
+    auto rho_a  = cur->density;
+    for(auto neigh: cur->neighs)
+    {
+        auto rb = neigh->position;
+        auto pb = neigh->pressure;
+        auto rho_b = neigh->density;
+        dvdt += -neigh->mass * (pa / (rho_a * rho_a) + pb / (rho_b * rho_b)) * gradW(ra - rb, _neighbor_radius);
+    }
+    dvdt += gravity;
+    return dvdt;
+}
+
+Vector3d SPH::viscosity_dvdt(shared_ptr<particle> cur)
+{
+    constexpr float eps = 0.01f;
+    Vector3d dvdt(0.0);
+    auto ra = cur->position;
+    auto va = cur->velocity;
+    auto rho_a = cur->density;
+    for(auto neigh: cur->neighs)
+    {
+        auto rho_b = neigh->density;
+        auto rb = neigh->position;
+        auto vb = neigh->velocity;
+        auto vab = va - vb;
+        auto rab = ra - rb;
+        if(vab.dot(rab) < 0)
+        {
+            auto v = -2 * _dh * _c / (rho_a +rho_b);
+            auto pi_ab = -v * vab.dot(rab) / (rab.dot(rab) + eps * _dh * _dh);
+             dvdt += neigh->mass * pi_ab * gradW(rab, _dh);
+        }
+    }
+    return dvdt;
+}
+
+double SPH::single_drhodt(shared_ptr<particle> cur)
+{
+    double drhodt = 0;
+    auto ra = cur->position;
+    auto va = cur->velocity;
+    auto neighs = cur->neighs;
+    for(auto neigh: neighs)
+    {
+        auto rb = neigh->position;
+        auto vb = neigh->velocity;
+        auto vab = va - vb;
+        auto rab = ra - rb;
+        drhodt += neigh->mass * vab.dot(gradW(rab, _dh));
+       }
+       return drhodt;
 }
 
 double SPH::single_pressure(shared_ptr<particle> cur)
 {
     auto p0 = _rho0 * _c * _c / _gamma;
-    auto rho = cur->density;
-    return p0 * (std::pow(rho / _rho0, 7) - 1.0);
+    return p0 * (pow(cur->density / _rho0, _gamma) - 1.0);
 }
 
-
-double SPH::single_density(shared_ptr<particle> cur)
+void SPH::boundry_collision()
 {
-    auto ra = cur->position;
-    auto va = cur->velocity;
-    double density = 0;
-    for (unsigned int pid = 0; pid < m_particle_list.size(); pid++)
+    for(auto ptcl: m_particle_list)
     {
-        shared_ptr<particle> neigh = m_particle_list.at(pid);
-        if((neigh->position - ra).norm() < _neighbor_radius)
+        auto pos = ptcl->position;
+        auto velo = ptcl->velocity;
+        double k = 0.4;
+        for(int i = 0; i < 3; i++)
         {
-
-            auto rb = neigh->position;
-            auto vb = neigh->velocity;
-            auto vab = va-vb;
-            auto rab = ra- rb;
-            density += _W(rab, _neighbor_radius) * neigh->mass;
+            if (pos(i,0) < 0)
+            {
+                pos(i,0) = 0;
+                if(velo(i,0) < 0)
+                    velo(i,0) += (k+1) * velo(i,0);
+            }
+            if (pos(i,0) > 1)
+            {
+               pos(i,0) = 1;
+                if (velo(i,0) > 0)
+                    velo(i,0) += -(1 + k) *velo(i,0);
+            }
         }
     }
-    return density;
-
 }
-
-void SPH::euler_step()
-{
-    //update 
-    for (unsigned int pid = 0; pid < m_particle_list.size(); pid++)
-    {
-        shared_ptr<particle> cur = m_particle_list.at(pid);
-        cur->density = single_density(cur);
-    }
-    for (unsigned int pid = 0; pid < m_particle_list.size(); pid++)
-    {
-        shared_ptr<particle> cur = m_particle_list.at(pid);
-        cur->pressure = single_pressure(cur);
-    }
-    for (unsigned int pid = 0; pid < m_particle_list.size(); pid++)
-    {
-        shared_ptr<particle> cur = m_particle_list.at(pid);
-        auto tot_acc = single_dvdt(cur);
-        cur->velocity += tot_acc * _dt;
-    }
-    for (unsigned int pid = 0; pid < m_particle_list.size(); pid++)
-    {
-        shared_ptr<particle> cur = m_particle_list.at(pid);
-        cur->position += cur->velocity * _dt;
-    }
-
-
-}
-
-
