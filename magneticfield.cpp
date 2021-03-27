@@ -10,9 +10,20 @@ MagneticField::MagneticField(double h):
 
 }
 
+ VectorXd MagneticField::calculateMagneticField(const SPH &particles){
+     MatrixXd A;
+     buildProblem(A, particles);
+     VectorXd &h_ext = particles.getExternalB();
+     return A.colPivHouseholderQr().solve(h_ext);
+ }
+
 
 void MagneticField::buildProblem(MatrixXd& mat,const SPH &particles){
 
+    double V = particles.getVolume();
+    double chi = particles.getMagneticSusceptibility();
+    double Gamma = V * chi / (1 + chi);
+    // room for paralellization
     for (const int &particle: particles.getParticles()) {
         for (const int& neighbor: particles.getParticles()) {
             
@@ -32,7 +43,7 @@ void MagneticField::buildProblem(MatrixXd& mat,const SPH &particles){
                         int idx1 = particle * 3 + j;
                         int idx2 = neighbor * 3 + l;
 
-                        mat(idx1, idx2) = G;
+                        mat(idx1, idx2) = delta(idx1, idx2) - Gamma * G;
                     }
                 }
             }
@@ -67,6 +78,10 @@ const double MagneticField::w_avr (const double q) const {
 
 const double MagneticField::W (const double q) const {
     return w(q/ m_h) / pow(m_h, 3.0);
+}
+
+const double MagneticField::delta(const int i,const int j) const {
+    return i == j ? 1.0 : 0.0;
 }
 
 const double MagneticField::W_avr (const double q) const{

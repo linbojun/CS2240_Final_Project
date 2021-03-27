@@ -12,6 +12,10 @@ public:
 
     std::vector<int>& getParticles() const;
     std::vector<int>& getNeighbors(int particle, float dist) const;
+
+    double getVolume() const ;
+    double getMagneticSusceptibility() const;
+    Eigen::VectorXd& getExternalB() const;
 };
 
 class MagneticField
@@ -31,7 +35,13 @@ private:
     const double W (const double q) const;
     const double W_avr (const double q) const;
 
+    const double delta(const int i,const int j) const;
+
+    Eigen::VectorXd calculateMagneticField(const SPH &particles);
+
     void buildProblem(Eigen::MatrixXd &mat,const SPH &particles);
+    
+    
     float getG (const SPH &particles, int i, int j, int k, int l);
 
 };
