@@ -16,7 +16,7 @@ Simulation::Simulation()
 
 void Simulation::init()
 {
-    m_sph = std::make_shared<SPH>(1000);
+    m_sph = std::make_shared<SPH>(100000);
     std::vector<Vector3f> groundVerts;
     std::vector<Vector3i> groundFaces;
     groundVerts.emplace_back(-5, -1, -5);
