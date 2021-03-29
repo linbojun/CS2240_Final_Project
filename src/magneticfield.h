@@ -1,3 +1,5 @@
+
+
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
 #include "Eigen/SparseQR"
@@ -5,7 +7,7 @@
 typedef Eigen::SparseMatrix<double> SpMat; // declares a column-major sparse matrix type of double
 typedef Eigen::Triplet<double> T;
 
-class SPH 
+class _SPHApi
 {
 public:
     Eigen::Vector3f getPos(int particle) const ;
@@ -37,12 +39,12 @@ private:
 
     const double delta(const int i,const int j) const;
 
-    Eigen::VectorXd calculateMagneticField(const SPH &particles);
+    Eigen::VectorXd calculateMagneticField(const _SPHApi &particles);
 
-    void buildProblem(Eigen::MatrixXd &mat,const SPH &particles);
+    void buildProblem(Eigen::MatrixXd &mat,const _SPHApi &particles);
     
     
-    float getG (const SPH &particles, int i, int j, int k, int l);
+    float getG (const _SPHApi &particles, int i, int j, int k, int l);
 
 };
 

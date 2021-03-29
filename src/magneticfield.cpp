@@ -1,4 +1,7 @@
+#if 0
 #include "magneticfield.h"
+#include "SPH.h"
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 using namespace std;
@@ -10,7 +13,7 @@ MagneticField::MagneticField(double h):
 
 }
 
- VectorXd MagneticField::calculateMagneticField(const SPH &particles){
+ VectorXd MagneticField::calculateMagneticField(const _SPHApi &particles){
      MatrixXd A;
      buildProblem(A, particles);
      VectorXd &h_ext = particles.getExternalB();
@@ -18,7 +21,7 @@ MagneticField::MagneticField(double h):
  }
 
 
-void MagneticField::buildProblem(MatrixXd& mat,const SPH &particles){
+void MagneticField::buildProblem(MatrixXd& mat,const _SPHApi &particles){
 
     double V = particles.getVolume();
     double chi = particles.getMagneticSusceptibility();
@@ -89,3 +92,4 @@ const double MagneticField::W_avr (const double q) const{
 }
 
 
+#endif
