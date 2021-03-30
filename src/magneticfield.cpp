@@ -47,7 +47,15 @@ void MagneticField::buildProblem(MatrixXd& mat, const _SPHApi &particles){
                     if (particle != neighbor || j == l){
                         double G  = 0.0;
                         if (particle != neighbor) G += r_ik(l) * r_ik(j) / pow(l_ik, 2.0) * (W_avr_ik - W_ik);
-                        if (j == l) G += W_ik - W_avr_ik /3.0;
+
+                        if (j == l) {
+                            if (particle != neighbor) {
+                                G += W_ik - W_avr_ik /3.0;
+                            } else {
+                                G += 2.0 * W_ik /3.0;
+                            }
+
+                        }
                         
                         int idx1 = particle * 3 + j;
                         int idx2 = neighbor * 3 + l;
