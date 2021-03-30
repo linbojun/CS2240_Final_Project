@@ -4,20 +4,34 @@
 #include "Eigen/Sparse"
 #include "Eigen/SparseQR"
 
-typedef Eigen::SparseMatrix<double> SpMat; // declares a column-major sparse matrix type of double
-typedef Eigen::Triplet<double> T;
 
 class _SPHApi
 {
+private:
+     Eigen::Vector3d m_pos = Eigen::Vector3d(0.0, 0.0, 0.0);
+     int m_num_particles = 0;
+     Eigen::VectorXd m_B = Eigen::VectorXd::Zero(10);
 public:
-    Eigen::Vector3f getPos(int particle) const ;
+    _SPHApi(){
+     }
 
-    std::vector<int>& getParticles() const;
-    std::vector<int>& getNeighbors(int particle, float dist) const;
+    Eigen::Vector3d getPos(int particle) const {
+        return m_pos;
+    };
 
-    double getVolume() const ;
-    double getMagneticSusceptibility() const;
-    Eigen::VectorXd& getExternalB() const;
+    int getParticles() const{
+        return m_num_particles;
+    };
+
+    double getVolume() const {
+        return 0.0;
+    };
+    double getMagneticSusceptibility() const {
+        return 0.0;
+    };
+    Eigen::VectorXd getExternalB() const{
+        return m_B;
+    };
 };
 
 class MagneticField
@@ -31,13 +45,18 @@ private:
 
     double m_h;
 
-    const double w (const double q) const;
-    const double w_avr (const double q) const;
-    
-    const double W (const double q) const;
-    const double W_avr (const double q) const;
+    Eigen::VectorXd m_guess;
+    bool m_isFirst = true;
 
-    const double delta(const int i,const int j) const;
+    Eigen::ConjugateGradient<Eigen::Matrix4d, Eigen::Lower| Eigen::Upper> m_cg;
+
+    double w (const double q) const;
+    double w_avr (const double q) const;
+    
+    double W (const double q) const;
+    double W_avr (const double q) const;
+
+    double delta(const int i,const int j) const;
 
     Eigen::VectorXd calculateMagneticField(const _SPHApi &particles);
 
