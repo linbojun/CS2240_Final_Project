@@ -14,9 +14,10 @@ Simulation::Simulation()
 {
 }
 
-void Simulation::init()
+void Simulation::init(int num_particles, float timestep, float radius)
 {
-    m_sph = std::make_shared<SPH>(100000);
+    m_sph = std::make_shared<SPH>(num_particles, radius);
+    m_timestep = timestep;
     std::vector<Vector3f> groundVerts;
     std::vector<Vector3i> groundFaces;
     groundVerts.emplace_back(-5, -1, -5);
@@ -28,9 +29,9 @@ void Simulation::init()
     m_ground.init(groundVerts, groundFaces, true);
 }
 
-void Simulation::update(float seconds)
+void Simulation::update(float _)
 {
-    m_sph->update(seconds);
+    m_sph->update(m_timestep);
 }
 
 void Simulation::draw(Shader *shader)

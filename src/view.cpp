@@ -48,7 +48,7 @@ void View::initializeGL()
     glClearColor(240.0f/255.0f, 248.0f/255.0f, 255.0f/255.0f, 1);
 
     m_shader = new Shader(":/shaders/shader.vert", ":/shaders/shader.frag");
-    m_sim.init();
+
 
     m_camera.setPosition(Eigen::Vector3f(0, 5, 0));
      // m_camera.lookAt(Eigen::Vector3f(0, 2, -5), Eigen::Vector3f(0, 2, 0), Eigen::Vector3f(0, 0, 1));
@@ -57,8 +57,26 @@ void View::initializeGL()
     m_camera.setOrbit(true);
     m_camera.setZoom(3);
 
+    auto argv = QApplication::arguments();
+    int argc = argv.size();
+    int num_particles = 10000;
+    float timestep = 0.01;
+    float radius = 0.03;
+    if(argc > 2) {
+        num_particles = std::stoi(argv[2].toStdString());
+    }
+    if(argc > 3) {
+        timestep = std::stof(argv[3].toStdString());
+    }
+    if(argc > 4) {
+        radius = std::stof(argv[4].toStdString());
+    }
+    m_sim.init(num_particles, timestep, radius);
+
     m_time.start();
     m_timer.start(1000 / 60);
+
+
 }
 
 void View::paintGL()

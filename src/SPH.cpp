@@ -43,44 +43,44 @@ inline bool inBounds(const Vector3d& pos) {
     return 1 >= pos[0] && pos[0] >= 0 && 1 >= pos[1] && pos[1] >= 0 && 1 >= pos[2] && pos[2] >= 0;
 }
 
-inline Vector3i gridPlace(const Vector3d& pos) {
+inline Vector3i SPH::gridPlace(const Vector3d& pos) {
     return Vector3i(pos[0] * (_grid_segs - 1), pos[1] * (_grid_segs - 1), pos[2] * (_grid_segs - 1));
 }
 
-inline int gridPlaceIndex(const Vector3i& place) {
+inline int SPH::gridPlaceIndex(const Vector3i& place) {
     return place[0] * _grid_segs * _grid_segs + place[1] * _grid_segs + place[2];
 }
 
-inline int gridIndex(Vector3d& pos) {
+inline int SPH::gridIndex(Vector3d& pos) {
     return gridPlaceIndex(gridPlace(pos));
 }
 
 
-Shape get_sphere_shape(float r) {
+Shape get_sphere_shape(float r, int res) {
     std::vector<Vector3f> points;
     std::vector<Vector3i> faces;
-    for(int thetas = 0; thetas < 20; thetas++) {
-        for(int phis = 1; phis < 19; phis++) {
-            float x = r * sin(phis*M_PI/20)*cos(thetas*2*M_PI/20);
-            float y = r * sin(phis*M_PI/20)*sin(thetas*2*M_PI/20);
-            float z = r * cos(phis*M_PI/20);
+    for(int thetas = 0; thetas < res; thetas++) {
+        for(int phis = 1; phis < res-1; phis++) {
+            float x = r * sin(phis*M_PI/res)*cos(thetas*2*M_PI/res);
+            float y = r * sin(phis*M_PI/res)*sin(thetas*2*M_PI/res);
+            float z = r * cos(phis*M_PI/res);
             points.push_back(Vector3f(x, y, z));
         }
     }
     // idx = thetas*18 + phis - 1
-    for(int thetas = 1; thetas < 21; thetas++) {
-        for(int phis = 2; phis < 19; phis++) {
-            faces.push_back(Vector3i((thetas%20)*18 + phis - 1, (thetas-1)*18 + phis - 1, (thetas-1)*18 + phis - 2));
-            faces.push_back(Vector3i((thetas%20)*18 + phis - 1, (thetas-1)*18 + phis - 2, (thetas%20)*18 + phis - 2));
+    for(int thetas = 1; thetas < res+1; thetas++) {
+        for(int phis = 2; phis < res-1; phis++) {
+            faces.push_back(Vector3i((thetas%res)*(res-2) + phis - 1, (thetas-1)*(res-2) + phis - 1, (thetas-1)*(res-2) + phis - 2));
+            faces.push_back(Vector3i((thetas%res)*(res-2) + phis - 1, (thetas-1)*(res-2) + phis - 2, (thetas%res)*(res-2) + phis - 2));
         }
     }
     int topi = points.size();
     points.push_back(Vector3f(0, 0, r));
     int boti = points.size();
     points.push_back(Vector3f(0, 0, -r));
-    for(int thetas = 0; thetas < 20; thetas++) {
-        faces.push_back(Vector3i(topi, thetas*18, ((thetas+1)%20)*18));
-        faces.push_back(Vector3i(boti, thetas*18 + 17, ((thetas+1)%20)*18 + 17));
+    for(int thetas = 0; thetas < res; thetas++) {
+        faces.push_back(Vector3i(topi, thetas*(res-2), ((thetas+1)%res)*(res-2)));
+        faces.push_back(Vector3i(boti, thetas*(res-2) + (res-3), ((thetas+1)%res)*(res-2) + (res-3)));
     }
     Shape shape;
     shape.init(points, faces, true);
@@ -88,9 +88,14 @@ Shape get_sphere_shape(float r) {
     return shape;
 }
 
-SPH::SPH(int n)
+SPH::SPH(int n, float radius) : m_radius(radius)
 {
-    m_shape = get_sphere_shape(_particle_radius);
+    _neighbor_radius = m_radius * 1.3f;
+    _grid_segs = 1 / _neighbor_radius;
+    _voxel_len = 1.f/_grid_segs;
+    _max_grid_search = ceil(_neighbor_radius / _voxel_len);
+    _dh =_neighbor_radius;
+
     m_grid.resize(_grid_segs * _grid_segs * _grid_segs);
 	for(int i = 0; i < n; i++){
 		shared_ptr<particle> new_particle(new particle);
@@ -100,8 +105,8 @@ SPH::SPH(int n)
         new_particle->velocity = zeros;
         new_particle->pressure = 0;
         new_particle->density = _rho0;
-        new_particle->mass = _particle_radius * _particle_radius * _particle_radius * _rho0;
-        //m_p_shapes.push_back(get_sphere_shape(_particle_radius));
+        new_particle->mass = m_radius * m_radius * m_radius * _rho0;
+        //m_p_shapes.push_back(get_sphere_shape(adius));
 	}
 }
 
@@ -135,7 +140,6 @@ vector<shared_ptr<particle>> SPH::find_neighs(int pi)
 
 void SPH::update(float seconds)
 {
-    seconds = 0.01;
     for(unsigned int i = 0; i < m_particle_list.size(); i++)
     {
         shared_ptr<particle> cur = m_particle_list.at(i);
@@ -280,8 +284,8 @@ void SPH::updateParticlePos(int i, Vector3d newPos, bool initializing) {
 }
 
 void SPH::draw(Shader *shader) {
+    static Shape shape = get_sphere_shape(m_radius, 4);
     for(int i = 0; i < m_particle_list.size(); i++) {
-        auto& shape = m_shape;
         auto& ptcl = m_particle_list[i];
         //cout << "pos=" << ptcl->position;
         shape.setModelMatrix(Eigen::Affine3f(Eigen::Translation3f(ptcl->position[0], ptcl->position[1], ptcl->position[2])));

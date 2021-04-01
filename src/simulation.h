@@ -12,7 +12,7 @@ class Simulation
 public:
     Simulation();
 
-    void init();
+    void init(int num_particles, float timestep, float radius);
 
     void update(float seconds);
 
@@ -22,6 +22,7 @@ public:
 private:
     std::shared_ptr<SPH> m_sph;
     Shape m_ground;
+    float m_timestep;
 };
 
 #endif // SIMULATION_H
