@@ -22,6 +22,7 @@ SOURCES += \
     src/graphics/shape.cpp \
     src/graphics/camera.cpp \
     src/graphics/MeshLoader.cpp \
+    src/magneticcomp.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
     src/simdump.cpp \
@@ -37,6 +38,7 @@ HEADERS += \
     src/graphics/shape.h \
     src/graphics/camera.h \
     src/mainwindow.h \
+    src/magneticcomp.h \
     src/simdump.h \
     src/simulation.h \
     src/view.h \
