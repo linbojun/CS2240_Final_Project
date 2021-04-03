@@ -200,7 +200,7 @@ Vector3d SPH::momentum_dvdt(shared_ptr<particle> cur)
         auto rb = neigh->position;
         auto pb = neigh->pressure;
         auto rho_b = neigh->density;
-        dvdt += -neigh->mass * (pa / (rho_a * rho_a) + pb / (rho_b * rho_b)) * gradW(ra - rb, _neighbor_radius);
+        dvdt += -neigh->mass * (pa / rho_a + pb / rho_b) * gradW(ra - rb, _neighbor_radius);
     }
     dvdt += gravity;
     return dvdt;
@@ -213,6 +213,7 @@ Vector3d SPH::viscosity_dvdt(shared_ptr<particle> cur)
     auto ra = cur->position;
     auto va = cur->velocity;
     auto rho_a = cur->density;
+    double alpha = 1;
     for(auto neigh: cur->neighs)
     {
         auto rho_b = neigh->density;
@@ -222,9 +223,11 @@ Vector3d SPH::viscosity_dvdt(shared_ptr<particle> cur)
         auto rab = ra - rb;
         if(vab.dot(rab) < 0)
         {
-            auto v = -2 * _dh * _c / (rho_a +rho_b);
-            auto pi_ab = -v * vab.dot(rab) / (rab.dot(rab) + eps * _dh * _dh);
-             dvdt += neigh->mass * pi_ab * gradW(rab, _dh);
+            auto weight = -neigh->mass *alpha * _dh * _c;
+            auto top = vab.dot(rab);
+            auto rho_ab = rho_a +rho_b;
+            auto bot = rho_ab* (rab.norm() * rab.norm() + eps * _dh * _dh);
+             dvdt += weight * top / bot * gradW(rab, _dh);
         }
     }
     return dvdt;
