@@ -170,9 +170,24 @@ Vector3d SPH::total_dvdt(shared_ptr<particle> cur)
     Vector3d dvdt(0,0,0);
     dvdt += momentum_dvdt(cur);
     dvdt += viscosity_dvdt(cur);
+    dvdt += tension_dvdt(cur);
     return dvdt;
 }
 
+Vector3d SPH::tension_dvdt(shared_ptr<particle> cur)
+{
+    Vector3d tension_force(0, 0, 0);
+    auto ra = cur->position;
+    for(auto neigh: cur->neighs){
+        auto rb = neigh->position;
+        auto rab = ra - rb;
+        if(rab.norm() < 2 * m_radius)
+        {
+            tension_force += 1000.0f * cur->mass * cur->mass * cos(3 * M_PI/ (4 * m_radius) * rab.norm()) * rab;
+        }
+    }
+     return tension_force / cur->mass;
+}
 Vector3d SPH::momentum_dvdt(shared_ptr<particle> cur)
 {
     Vector3d gravity(0,-0.1,0);
@@ -193,7 +208,7 @@ Vector3d SPH::momentum_dvdt(shared_ptr<particle> cur)
 
 Vector3d SPH::viscosity_dvdt(shared_ptr<particle> cur)
 {
-    constexpr float eps = 0.01f;
+    double eps = 0.01;
     Vector3d dvdt(0, 0, 0);
     auto ra = cur->position;
     auto va = cur->velocity;

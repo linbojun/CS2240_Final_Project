@@ -83,9 +83,12 @@ private:
     void updateParticlePos(int i, Eigen::Vector3d newPos, bool initializing=false);
     Eigen::Vector3i gridPlace(const Eigen::Vector3d& pos);
 
+    Eigen::Vector3d tension_dvdt(std::shared_ptr<particle> cur);
+
+
     int gridPlaceIndex(const Eigen::Vector3i& place);
 
-    int SPH::gridIndex(Eigen::Vector3d& pos);
+    int gridIndex(Eigen::Vector3d& pos);
 
 };
 
