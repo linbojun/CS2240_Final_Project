@@ -97,9 +97,9 @@ SPH::SPH(int n, float radius) : m_radius(radius)
     _dh =_neighbor_radius;
 
     m_grid.resize(_grid_segs * _grid_segs * _grid_segs);
-	for(int i = 0; i < n; i++){
-		shared_ptr<particle> new_particle(new particle);
-		m_particle_list.push_back(new_particle);
+    for(int i = 0; i < n; i++){
+        shared_ptr<particle> new_particle(new particle);
+        m_particle_list.push_back(new_particle);
         Vector3d zeros(0,0,0);
         updateParticlePos(i, Vector3d::Random() * 0.5 + Vector3d(0.5, 0.5, 0.5));
         new_particle->velocity = zeros;
@@ -107,7 +107,7 @@ SPH::SPH(int n, float radius) : m_radius(radius)
         new_particle->density = _rho0;
         new_particle->mass = m_radius * m_radius * m_radius * _rho0;
         //m_p_shapes.push_back(get_sphere_shape(adius));
-	}
+    }
 }
 
 vector<shared_ptr<particle>> SPH::find_neighs(int pi)
@@ -200,7 +200,7 @@ Vector3d SPH::momentum_dvdt(shared_ptr<particle> cur)
         auto rb = neigh->position;
         auto pb = neigh->pressure;
         auto rho_b = neigh->density;
-        dvdt += -neigh->mass * (pa / rho_a + pb / rho_b) * gradW(ra - rb, _neighbor_radius);
+        dvdt += -neigh->mass * (pa / (rho_a * rho_a) + pb / (rho_b * rho_b)) * gradW(ra - rb, _neighbor_radius);
     }
     dvdt += gravity;
     return dvdt;
@@ -213,7 +213,6 @@ Vector3d SPH::viscosity_dvdt(shared_ptr<particle> cur)
     auto ra = cur->position;
     auto va = cur->velocity;
     auto rho_a = cur->density;
-    double alpha = 1;
     for(auto neigh: cur->neighs)
     {
         auto rho_b = neigh->density;
@@ -223,10 +222,11 @@ Vector3d SPH::viscosity_dvdt(shared_ptr<particle> cur)
         auto rab = ra - rb;
         if(vab.dot(rab) < 0)
         {
-            auto weight = -neigh->mass *alpha * _dh * _c;
+            auto rho_ab = rho_a + rho_b;
+            auto weight = -neigh->mass * _dh * _c;
             auto top = vab.dot(rab);
-            auto rho_ab = rho_a +rho_b;
-            auto bot = rho_ab* (rab.norm() * rab.norm() + eps * _dh * _dh);
+            auto bot  = rho_ab * (rab.norm() * rab.norm() + eps * _dh * _dh);
+//            auto pi_ab = -v * vab.dot(rab) / (rab.dot(rab) + eps * _dh * _dh);
              dvdt += weight * top / bot * gradW(rab, _dh);
         }
     }
@@ -310,3 +310,4 @@ void SPH::draw(Shader *shader) {
         shape.draw(shader);
     }
 }
+
