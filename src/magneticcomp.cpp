@@ -12,7 +12,7 @@ MagneticComp::MagneticComp(double h):
 
 }
 
- VectorXd MagneticComp::calculateMagneticField(const _SPHApi &particles){
+ VectorXd MagneticComp::calculateMagneticField(const SPH &particles){
      MatrixXd A;
      buildProblem(A, particles);
      VectorXd h_ext = particles.getExternalB();
@@ -27,11 +27,11 @@ MagneticComp::MagneticComp(double h):
  }
 
 
-void MagneticComp::buildProblem(MatrixXd& mat, const _SPHApi &particles){
+void MagneticComp::buildProblem(MatrixXd& mat, const SPH &particles){
     double Gamma = particles.getGamma();
     // room for paralellization
-    for (int particle = 0; particle <  particles.getParticles(); ++particle) {
-        for (int neighbor = 0; neighbor <  particles.getParticles(); ++neighbor) {
+    for (int particle = 0; particle <  particles.getNumParticle(); ++particle) {
+        for (int neighbor = 0; neighbor <  particles.getNumParticle(); ++neighbor) {
             
             Vector3d r_ik = particles.getPos(particle) -  particles.getPos(neighbor);
             double l_ik = r_ik.norm();
@@ -65,14 +65,14 @@ void MagneticComp::buildProblem(MatrixXd& mat, const _SPHApi &particles){
     }
 }
 
-VectorXd MagneticComp::calculateMagneticForce(VectorXd &F, const _SPHApi &particles) {
+VectorXd MagneticComp::calculateMagneticForce(VectorXd &F, const SPH &particles) {
     VectorXd m = particles.getGamma() * calculateMagneticField(particles);
     double mu_0 = particles.getPermeability();
     // room for paralellization
-    for (int target = 0; target < particles.getParticles(); ++target) {
+    for (int target = 0; target < particles.getNumParticle(); ++target) {
         Matrix3d U = Matrix3d::Zero();
         Vector3d m_target = Vector3d(m(3*target), m(3*target + 1), m(3*target + 2));
-        for (int source = 0; source < particles.getParticles(); ++source) {
+        for (int source = 0; source < particles.getNumParticle(); ++source) {
             Vector3d r = particles.getPos(target) - particles.getPos(source);
             double l = r.norm();
             Vector3d m_source = Vector3d(m(3*source), m(3*source + 1), m(3*source + 2));

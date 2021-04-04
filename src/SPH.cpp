@@ -88,7 +88,9 @@ Shape get_sphere_shape(float r, int res) {
     return shape;
 }
 
-SPH::SPH(int n, float radius) : m_radius(radius)
+SPH::SPH(int n, float radius) :
+    m_radius(radius),
+    m_numParticles(n)
 {
     _neighbor_radius = m_radius * 1.3f;
     _grid_segs = 1 / _neighbor_radius;
@@ -310,4 +312,29 @@ void SPH::draw(Shader *shader) {
         shape.draw(shader);
     }
 }
+
+
+Vector3d SPH::getPos(int particle) const{
+    return m_particle_list[particle]->position;
+}
+//TODO: find the correct volume by intialize the particle uniformly
+double SPH::getVolume() const{
+    return pow(_dh, 3.0);
+}
+double SPH::getMagneticSusceptibility() const{
+    return (double) _chi;
+}
+VectorXd SPH::getExternalB() const{
+    return m_Bext;
+}
+double SPH::getPermeability() const{
+    return (double) _mu_0;
+
+}
+double SPH::getGamma() const{
+    double V = getVolume();
+    double chi = getMagneticSusceptibility();
+    return V * chi / (1 + chi);
+}
+
 

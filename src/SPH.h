@@ -12,6 +12,8 @@ const float _rho0 = 1000;
 const float _dt = 0.0001;
 const float _mu = 1;
 const float _gamma = 7.0f;
+const float _chi = 0.1f;
+const float _mu_0 = 4 * M_PI * 1e-7;
 const float _c = 9.0f;
 
 // the best number for grid_segs is probably that which makes max_grid_search equal to 1
@@ -48,10 +50,20 @@ public:
     void update(float time_step);
     void draw(Shader *shader);
     const std::vector<std::shared_ptr<particle>> &getParticles() { return m_particle_list; }
+    int getNumParticle() const {return m_numParticles; }
+
+    Eigen::Vector3d getPos(int particle) const;
+    double getVolume() const;
+    double getMagneticSusceptibility() const;
+    Eigen::VectorXd getExternalB() const;
+    double getPermeability() const;
+    double getGamma() const;
 
 
 private:
+    Eigen::VectorXd m_Bext;
 	int size;
+    int m_numParticles;
     float m_radius;
     float _neighbor_radius;
     int _grid_segs = 1 / _neighbor_radius;
