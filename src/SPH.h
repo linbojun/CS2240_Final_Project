@@ -12,8 +12,6 @@ const float _rho0 = 1000;
 const float _dt = 0.0001;
 const float _mu = 1;
 const float _gamma = 7.0f;
-const float _chi = 0.1f;
-const float _mu_0 = 4 * M_PI * 1e-7;
 const float _c = 9.0f;
 
 // the best number for grid_segs is probably that which makes max_grid_search equal to 1
@@ -42,26 +40,29 @@ typedef struct particle{
     double drhodt;
 
 
-}particle;
+};
 
 class SPH{
 public:
     SPH(int n, float radius);
-    void update(float time_step);
+    virtual void update(float time_step);
     void draw(Shader *shader);
     const std::vector<std::shared_ptr<particle>> &getParticles() { return m_particle_list; }
     int getNumParticle() const {return m_numParticles; }
 
     Eigen::Vector3d getPos(int particle) const;
     double getVolume() const;
-    double getMagneticSusceptibility() const;
-    Eigen::VectorXd getExternalB() const;
-    double getPermeability() const;
-    double getGamma() const;
 
+protected:
+    std::vector<std::shared_ptr<particle>> m_particle_list;
+    std::vector<std::shared_ptr<particle>> find_neighs(int pi);
+    Eigen::Vector3d total_dvdt(std::shared_ptr<particle> cur);
+    double single_drhodt(std::shared_ptr<particle> cur);
+    void updateParticlePos(int i, Eigen::Vector3d newPos, bool initializing=false);
+    double single_pressure(std::shared_ptr<particle> cur);
+    void boundry_collision();
 
 private:
-    Eigen::VectorXd m_Bext;
 	int size;
     int m_numParticles;
     float m_radius;
@@ -71,8 +72,7 @@ private:
     int _max_grid_search = ceil(_neighbor_radius / _voxel_len);
     float _dh =_neighbor_radius;
 
-	double m_time;
-    std::vector<std::shared_ptr<particle>> m_particle_list;
+    double m_time;
     //std::vector<Shape> m_p_shapes;
     Shape m_shape;
     std::vector<std::vector<int>> m_grid;
@@ -85,14 +85,8 @@ private:
 
 
     void euler_step();
-    std::vector<std::shared_ptr<particle>> find_neighs(int pi);
-    Eigen::Vector3d total_dvdt(std::shared_ptr<particle> cur);
     Eigen::Vector3d momentum_dvdt(std::shared_ptr<particle> cur);
     Eigen::Vector3d viscosity_dvdt(std::shared_ptr<particle> cur);
-    double single_drhodt(std::shared_ptr<particle> cur);
-    double single_pressure(std::shared_ptr<particle> cur);
-    void boundry_collision();
-    void updateParticlePos(int i, Eigen::Vector3d newPos, bool initializing=false);
     Eigen::Vector3i gridPlace(const Eigen::Vector3d& pos);
 
     Eigen::Vector3d tension_dvdt(std::shared_ptr<particle> cur);

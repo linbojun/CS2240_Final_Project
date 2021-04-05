@@ -2,7 +2,7 @@
 #define SIMULATION_H
 
 #include "graphics/shape.h"
-#include "SPH.h"
+#include "MagneticSPH.h"
 #include <memory>
 
 class Shader;
@@ -20,7 +20,7 @@ public:
 
 
 private:
-    std::shared_ptr<SPH> m_sph;
+    std::shared_ptr<MagneticSPH> m_sph;
     Shape m_ground;
     float m_timestep;
 };

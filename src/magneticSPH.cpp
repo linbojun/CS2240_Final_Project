@@ -1,21 +1,45 @@
-#include "magneticcomp.h"
-#include "SPH.h"
+#include "magneticSPH.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 
 using namespace std;
 using namespace Eigen;
 
-MagneticComp::MagneticComp(double h):
-    m_h(h)
+MagneticSPH::MagneticSPH(int n, float radius, double h):
+    SPH(n, radius), m_h(h)
 {
-
 }
 
- VectorXd MagneticComp::calculateMagneticField(const SPH &particles){
-     MatrixXd A;
-     buildProblem(A, particles);
-     VectorXd h_ext = particles.getExternalB();
+void MagneticSPH::update(float seconds)
+{
+    VectorXd F;
+    calculateMagneticForce(F);
+    for(unsigned int i = 0; i < m_particle_list.size(); i++)
+    {
+        shared_ptr<particle> cur = m_particle_list.at(i);
+        cur->neighs  = find_neighs(i);
+        cur->dvdt = total_dvdt(cur) + Vector3d(F(3*i), F(3*i+1), F(3*i+2))/cur->mass;
+        cur->drhodt = single_drhodt(cur);
+    }
+    for(unsigned int i = 0; i < m_particle_list.size(); i++)
+    {
+        shared_ptr<particle> cur = m_particle_list.at(i);
+        updateParticlePos(i, cur->position + 0.5 * seconds * cur->velocity);
+        cur->velocity += 0.5 * seconds * cur->dvdt;
+        cur->density += seconds * cur->drhodt;
+        cur->pressure = single_pressure(cur);
+    }
+    for(unsigned int i = 0; i < m_particle_list.size(); i++)
+    {
+        shared_ptr<particle> cur = m_particle_list.at(i);
+        updateParticlePos(i, cur->position + seconds * cur->velocity);
+        cur->velocity += seconds * cur->dvdt;
+    }
+    boundry_collision();
+}
+
+ VectorXd MagneticSPH::calculateMagneticField(const MatrixXd& A){
+     VectorXd h_ext = getExternalB();
      m_cg.compute(A);
      if (m_isFirst){
          m_isFirst = false;
@@ -27,13 +51,13 @@ MagneticComp::MagneticComp(double h):
  }
 
 
-void MagneticComp::buildProblem(MatrixXd& mat, const SPH &particles){
-    double Gamma = particles.getGamma();
+void MagneticSPH::buildProblem(MatrixXd& mat){
+    double Gamma = getGamma();
     // room for paralellization
-    for (int particle = 0; particle <  particles.getNumParticle(); ++particle) {
-        for (int neighbor = 0; neighbor <  particles.getNumParticle(); ++neighbor) {
+    for (int particle = 0; particle <  getNumParticle(); ++particle) {
+        for (int neighbor = 0; neighbor <  getNumParticle(); ++neighbor) {
             
-            Vector3d r_ik = particles.getPos(particle) -  particles.getPos(neighbor);
+            Vector3d r_ik = getPos(particle) -  getPos(neighbor);
             double l_ik = r_ik.norm();
 
             double W_avr_ik = W_avr(l_ik);
@@ -65,15 +89,17 @@ void MagneticComp::buildProblem(MatrixXd& mat, const SPH &particles){
     }
 }
 
-VectorXd MagneticComp::calculateMagneticForce(VectorXd &F, const SPH &particles) {
-    VectorXd m = particles.getGamma() * calculateMagneticField(particles);
-    double mu_0 = particles.getPermeability();
+VectorXd MagneticSPH::calculateMagneticForce(VectorXd &F) {
+    MatrixXd mat;
+    buildProblem(mat);
+    VectorXd m = getGamma() * calculateMagneticField(mat);
+    double mu_0 = getPermeability();
     // room for paralellization
-    for (int target = 0; target < particles.getNumParticle(); ++target) {
+    for (int target = 0; target < getNumParticle(); ++target) {
         Matrix3d U = Matrix3d::Zero();
         Vector3d m_target = Vector3d(m(3*target), m(3*target + 1), m(3*target + 2));
-        for (int source = 0; source < particles.getNumParticle(); ++source) {
-            Vector3d r = particles.getPos(target) - particles.getPos(source);
+        for (int source = 0; source < getNumParticle(); ++source) {
+            Vector3d r = getPos(target) - getPos(source);
             double l = r.norm();
             Vector3d m_source = Vector3d(m(3*source), m(3*source + 1), m(3*source + 2));
             if (l >= 4 * m_h) {
@@ -99,7 +125,7 @@ VectorXd MagneticComp::calculateMagneticForce(VectorXd &F, const SPH &particles)
     return F;
 }
 
-Matrix3d MagneticComp::objectToWorld (const Vector3d r) const {
+Matrix3d MagneticSPH::objectToWorld (const Vector3d r) const {
     Vector3d v3 = r.normalized();
     Vector3d v2 = Vector3d(0.0, 1.0, 0.0);
     if (fabs(v3.dot(v2) == 1.0)) {
@@ -112,12 +138,12 @@ Matrix3d MagneticComp::objectToWorld (const Vector3d r) const {
     return R;
 }
 
-Matrix3d MagneticComp::delH (const Vector3d r, const Vector3d m) const {
+Matrix3d MagneticSPH::delH (const Vector3d r, const Vector3d m) const {
     double l = r.norm();
     return (r.transpose() * m * Matrix3d::Identity() + r * m.transpose() + m * r.transpose()) * A(l) + (r * (r.transpose() * m * r.transpose())/r.norm()) * Aprime(l);
 }
 
-double MagneticComp::w (const double q) const {
+double MagneticSPH::w (const double q) const {
     if (0 <= q && q < 1){
         return 0.25 * pow(2.0 - q, 3.0) - pow(1.0 - q, 3.0) / M_PI;
     } else if (1 <= q && q < 2){
@@ -127,7 +153,7 @@ double MagneticComp::w (const double q) const {
     }
 }
 
-double MagneticComp::w_avr (const double q) const {
+double MagneticSPH::w_avr (const double q) const {
     if (0 <= q && q < 1){
         return (15.0 * pow(q, 3) - 36.0 * pow(q, 1.0) + 40.0)/ (40.0 * M_PI) ;
     } else if (1 <= q && q < 2){
@@ -138,19 +164,19 @@ double MagneticComp::w_avr (const double q) const {
     } 
 }
 
-double MagneticComp::W (const double q) const {
+double MagneticSPH::W (const double q) const {
     return w(q/ m_h) / pow(m_h, 3.0);
 }
 
-double MagneticComp::delta(const int i,const int j) const {
+double MagneticSPH::delta(const int i,const int j) const {
     return i == j ? 1.0 : 0.0;
 }
 
-double MagneticComp::W_avr (const double q) const{
+double MagneticSPH::W_avr (const double q) const{
     return w_avr(q/ m_h) / pow(m_h, 3.0);
 }
 
-double MagneticComp::wprime (const double q) const {
+double MagneticSPH::wprime (const double q) const {
     if (0 <= q && q < 1) {
         return (-0.75 * pow(2.0-q, 2.0) + 3.0 * pow(1.0-q, 2.0))/M_PI;
     } else if (1 <= q && q < 2) {
@@ -160,19 +186,19 @@ double MagneticComp::wprime (const double q) const {
     }
 }
 
-double MagneticComp::Wprime (const double q) const  {
+double MagneticSPH::Wprime (const double q) const  {
     return wprime(q/m_h)/pow(m_h, 4.0);
 }
 
-double MagneticComp::A (const double q) const  {
+double MagneticSPH::A (const double q) const  {
     return (W(q) - W_avr(q))/pow(q, 2.0);
 }
 
-double MagneticComp::Aprime (const double q) const  {
+double MagneticSPH::Aprime (const double q) const  {
     return 5.0 * (W(q) - W_avr(q))/pow(q, 3.0) - Wprime(q)/pow(q, 2.0);
 }
 
-double MagneticComp::C1 (const double q) const  {
+double MagneticSPH::C1 (const double q) const  {
     VectorXd qexp(5);
     qexp << pow(q, 4.0), pow(q, 3.0), pow(q, 2.0), pow(q, 1.0), 1.0;
     VectorXd coeff(5);
@@ -188,7 +214,7 @@ double MagneticComp::C1 (const double q) const  {
     return qexp.dot(coeff);
 }
 
-double MagneticComp::C2 (const double q) const  {
+double MagneticSPH::C2 (const double q) const  {
     VectorXd qexp(5);
     qexp << pow(q, 4.0), pow(q, 3.0), pow(q, 2.0), pow(q, 1.0), 1.0;
     VectorXd coeff(5);
@@ -202,4 +228,22 @@ double MagneticComp::C2 (const double q) const  {
         coeff << 7.334e-10, -9.588e-9, 4.379e-8, -7.480e-8, 2.341e-8;
     }
     return qexp.dot(coeff);
+}
+
+double MagneticSPH::getMagneticSusceptibility() const{
+    return (double) _chi;
+}
+
+VectorXd MagneticSPH::getExternalB() const{
+    return m_Bext;
+}
+
+double MagneticSPH::getPermeability() const{
+    return (double) _mu_0;
+
+}
+double MagneticSPH::getGamma() const{
+    double V = getVolume();
+    double chi = getMagneticSusceptibility();
+    return V * chi / (1 + chi);
 }

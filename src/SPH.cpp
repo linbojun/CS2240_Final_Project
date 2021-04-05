@@ -321,20 +321,6 @@ Vector3d SPH::getPos(int particle) const{
 double SPH::getVolume() const{
     return pow(_dh, 3.0);
 }
-double SPH::getMagneticSusceptibility() const{
-    return (double) _chi;
-}
-VectorXd SPH::getExternalB() const{
-    return m_Bext;
-}
-double SPH::getPermeability() const{
-    return (double) _mu_0;
 
-}
-double SPH::getGamma() const{
-    double V = getVolume();
-    double chi = getMagneticSusceptibility();
-    return V * chi / (1 + chi);
-}
 
 

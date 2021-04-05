@@ -1,6 +1,6 @@
 
-#ifndef MAGNETICCOMP_H
-#define MAGNETICCOMP_H
+#ifndef MAGNETICSPH_H
+#define MAGNETICSPH_H
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
 #include "Eigen/SparseQR"
@@ -45,15 +45,19 @@
 //    }
 //};
 
-class MagneticComp
+const float _chi = 0.1f;
+const float _mu_0 = 4 * M_PI * 1e-7;
+
+class MagneticSPH : public SPH
 {
 
 public:
     
-    MagneticComp(double h);
+    MagneticSPH(int n, float radius, double h);
+    void update(float time_step) override;
 
 private:
-
+    Eigen::VectorXd m_Bext;
     double m_h;
 
     Eigen::VectorXd m_guess;
@@ -83,14 +87,19 @@ private:
 
     double delta (const int i,const int j) const;
 
-    Eigen::VectorXd calculateMagneticField(const SPH &particles);
+    Eigen::VectorXd calculateMagneticField(const Eigen::MatrixXd& A);
 
-    Eigen::VectorXd calculateMagneticForce(Eigen::VectorXd &F, const SPH &particles);
+    Eigen::VectorXd calculateMagneticForce(Eigen::VectorXd &F);
 
-    void buildProblem(Eigen::MatrixXd &mat,const SPH &particles);
+    void buildProblem(Eigen::MatrixXd &mat);
     
     
     float getG (const SPH &particles, int i, int j, int k, int l);
+
+    double getMagneticSusceptibility() const;
+    Eigen::VectorXd getExternalB() const;
+    double getPermeability() const;
+    double getGamma() const;
 
 };
 
