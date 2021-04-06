@@ -2,7 +2,7 @@
 #define SIMULATION_H
 
 #include "graphics/shape.h"
-#include "MagneticSPH.h"
+#include "magneticSPH.h"
 #include <memory>
 
 class Shader;

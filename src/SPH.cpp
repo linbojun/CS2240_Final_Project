@@ -90,7 +90,8 @@ Shape get_sphere_shape(float r, int res) {
 
 SPH::SPH(int n, float radius) :
     m_radius(radius),
-    m_numParticles(n)
+    m_numParticles(n),
+    m_posInit(radius * 2.0)
 {
     _neighbor_radius = m_radius * 1.3f;
     _grid_segs = 1 / _neighbor_radius;
@@ -99,11 +100,18 @@ SPH::SPH(int n, float radius) :
     _dh =_neighbor_radius;
 
     m_grid.resize(_grid_segs * _grid_segs * _grid_segs);
-    for(int i = 0; i < n; i++){
+
+    //initialize position
+    m_posInit.addBox(Vector3f(0.0, 2.0, 0.0), 1.0, 1.0, 1.0);
+
+
+    for(int i = 0; i < m_posInit.getNumParticles(); i++){
+//    for(int i = 0; i < n; i++){
         shared_ptr<particle> new_particle(new particle);
         m_particle_list.push_back(new_particle);
         Vector3d zeros(0,0,0);
-        updateParticlePos(i, Vector3d::Random() * 0.5 + Vector3d(0.5, 0.5, 0.5));
+//        updateParticlePos(i, Vector3d::Random() * 0.5 + Vector3d(0.5, 0.5, 0.5));
+        updateParticlePos(i, m_posInit.getPt(i).cast<double> ());
         new_particle->velocity = zeros;
         new_particle->pressure = 0;
         new_particle->density = _rho0;

@@ -31,7 +31,7 @@ void Simulation::init(int num_particles, float timestep, float radius)
     m_ground.init(groundVerts, groundFaces, true);
 }
 
-void Simulation::update(float _)
+void Simulation::update(float time)
 {
     m_sph->update(m_timestep);
 }

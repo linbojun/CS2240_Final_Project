@@ -6,6 +6,7 @@
 #include <Eigen/StdVector>
 #include <vector>
 #include <graphics/shape.h>
+#include "positioninit.h"
 
 
 const float _rho0 = 1000;
@@ -38,9 +39,7 @@ typedef struct particle{
     std::vector<std::shared_ptr<particle>> neighs;
     Eigen::Vector3d dvdt;
     double drhodt;
-
-
-};
+} particle;
 
 class SPH{
 public:
@@ -71,6 +70,8 @@ private:
     float _voxel_len = 1.f/_grid_segs;
     int _max_grid_search = ceil(_neighbor_radius / _voxel_len);
     float _dh =_neighbor_radius;
+
+    PositionInit m_posInit;
 
     double m_time;
     //std::vector<Shape> m_p_shapes;

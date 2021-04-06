@@ -25,6 +25,7 @@ SOURCES += \
     src/magneticSPH.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
+    src/positioninit.cpp \
     src/simdump.cpp \
     src/simulation.cpp \
     src/view.cpp \
@@ -39,6 +40,7 @@ HEADERS += \
     src/graphics/camera.h \
     src/mainwindow.h \
     src/magneticSPH.h \
+    src/positioninit.h \
     src/simdump.h \
     src/simulation.h \
     src/view.h \
