@@ -112,7 +112,7 @@ void Camera::setZoom(float zoom)
     m_viewDirty = true;
 }
 
-const Eigen::Matrix4f &Camera::getView()
+const Eigen::Matrix4f Camera::getView()
 {
     if(m_viewDirty) {
         Eigen::Vector3f pos;
@@ -137,7 +137,7 @@ const Eigen::Matrix4f &Camera::getView()
     return m_view;
 }
 
-const Eigen::Matrix4f &Camera::getProjection()
+const Eigen::Matrix4f Camera::getProjection()
 {
     if(m_projDirty) {
         float theta = m_fovY * 0.5f;
@@ -154,7 +154,7 @@ const Eigen::Matrix4f &Camera::getProjection()
     return m_proj;
 }
 
-const Eigen::Vector3f &Camera::getLook()
+const Eigen::Vector3f Camera::getLook()
 {
     return m_look;
 }

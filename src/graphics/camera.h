@@ -26,10 +26,10 @@ public:
     void zoom(float zoom);
     void setZoom(float zoom);
 
-    const Eigen::Matrix4f& getView();
-    const Eigen::Matrix4f& getProjection();
+    const Eigen::Matrix4f getView();
+    const Eigen::Matrix4f getProjection();
 
-    const Eigen::Vector3f &getLook();
+    const Eigen::Vector3f getLook();
 
     void setOrbit(bool orbit);
     void toggleOrbit();
