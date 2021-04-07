@@ -50,12 +50,16 @@ void View::initializeGL()
     m_shader = new Shader(":/shaders/shader.vert", ":/shaders/shader.frag");
 
 
-    m_camera.setPosition(Eigen::Vector3f(0, 5, 0));
-     // m_camera.lookAt(Eigen::Vector3f(0, 2, -5), Eigen::Vector3f(0, 2, 0), Eigen::Vector3f(0, 0, 1));
-       m_camera.setTarget(Eigen::Vector3f(0.5, 0.5, 0.5));
-    m_camera.setPerspective(120, width() / static_cast<float>(height()), 0.1, 50000);
-    m_camera.setOrbit(true);
-    m_camera.setZoom(3);
+//    m_camera.setPosition(Eigen::Vector3f(0, 5, 0));
+//     // m_camera.lookAt(Eigen::Vector3f(0, 2, -5), Eigen::Vector3f(0, 2, 0), Eigen::Vector3f(0, 0, 1));
+//    m_camera.setTarget(Eigen::Vector3f(0.5, 0.5, 0.5));
+//    m_camera.setPerspective(120, width() / static_cast<float>(height()), 0.1, 50000);
+//    m_camera.setOrbit(true);
+//    m_camera.setZoom(3);
+     m_camera.setPosition(Eigen::Vector3f(0, 0, 5));
+     m_camera.lookAt(Eigen::Vector3f(0, 2, -5), Eigen::Vector3f(0, 2, 0), Eigen::Vector3f(0, 1, 0));
+     m_camera.setTarget(Eigen::Vector3f(0, 2, 0));
+     m_camera.setPerspective(120, width() / static_cast<float>(height()), 0.1, 50);
 
     auto argv = QApplication::arguments();
     int argc = argv.size();

@@ -315,12 +315,11 @@ void SPH::draw(Shader *shader) {
     static Shape shape = get_sphere_shape(m_radius, 4);
     for(int i = 0; i < m_particle_list.size(); i++) {
         auto& ptcl = m_particle_list[i];
-        //cout << "pos=" << ptcl->position;
+        cout << "pos=" << ptcl->position;
         shape.setModelMatrix(Eigen::Affine3f(Eigen::Translation3f(ptcl->position[0], ptcl->position[1], ptcl->position[2])));
         shape.draw(shader);
     }
 }
-
 
 Vector3d SPH::getPos(int particle) const{
     return m_particle_list[particle]->position;

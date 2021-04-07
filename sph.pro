@@ -29,7 +29,8 @@ SOURCES += \
     src/simdump.cpp \
     src/simulation.cpp \
     src/view.cpp \
-    src/viewformat.cpp
+    src/viewformat.cpp \
+
 
 HEADERS += \
     src/SPH.h \
