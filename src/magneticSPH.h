@@ -5,6 +5,9 @@
 #include "Eigen/Sparse"
 #include "Eigen/SparseQR"
 #include "SPH.h"
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <math.h>
 
 
 //class SPH

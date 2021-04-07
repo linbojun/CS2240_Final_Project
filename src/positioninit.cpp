@@ -23,8 +23,8 @@ void PositionInit::addSphere(Eigen::Vector3f center, float radius){
     for (int i = - boxSz; i < boxSz; ++i){
         for (int j = - boxSz; j < boxSz; ++j){
             for (int k = - boxSz; k < boxSz; ++k){
-                if ((i*i + j*j + k*k)*m_dx < radius * radius){
-                    m_pts.emplace_back(i * m_dx + center(0), j * m_dx + center(1), k * m_dx + center(2));
+                if ((i*i + j*j + k*k)*m_dx*m_dx < radius * radius){
+                    m_pts.emplace_back(Vector3f(i * m_dx + center(0), j * m_dx + center(1), k * m_dx + center(2)) + Vector3f::Random() * 0.1 * m_dx);
                 }
             }
         }
@@ -38,7 +38,7 @@ void PositionInit::addBox(Eigen::Vector3f center, float width, float height, flo
     for (int i = - widthInt; i < widthInt; ++i){
         for (int j = - heightInt; j < heightInt; ++j){
             for (int k = - thickInt; k < thickInt; ++k){
-                m_pts.emplace_back(i * m_dx + center(0), j * m_dx + center(1), k * m_dx + center(2));
+                m_pts.emplace_back(Vector3f(i * m_dx + center(0), j * m_dx + center(1), k * m_dx + center(2)) + Vector3f::Random() * 0.1 * m_dx);
             }
         }
     }

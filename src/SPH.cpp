@@ -91,7 +91,7 @@ Shape get_sphere_shape(float r, int res) {
 SPH::SPH(int n, float radius) :
     m_radius(radius),
     m_numParticles(n),
-    m_posInit(radius * 2.0)
+    m_posInit(radius*1.5)
 {
     _neighbor_radius = m_radius * 1.3f;
     _grid_segs = 1 / _neighbor_radius;
@@ -102,8 +102,8 @@ SPH::SPH(int n, float radius) :
     m_grid.resize(_grid_segs * _grid_segs * _grid_segs);
 
     //initialize position
-    m_posInit.addBox(Vector3f(0.0, 2.0, 0.0), 1.0, 1.0, 1.0);
-
+    m_posInit.addBox(Vector3f(0.5, 0.15, 0.5), 1, 0.2, 1);
+    m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.1);
 
     for(int i = 0; i < m_posInit.getNumParticles(); i++){
 //    for(int i = 0; i < n; i++){
