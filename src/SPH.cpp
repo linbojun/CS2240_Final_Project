@@ -90,8 +90,7 @@ Shape get_sphere_shape(float r, int res) {
 
 SPH::SPH(int n, float radius) :
     m_radius(radius),
-    m_numParticles(n),
-    m_posInit(radius*1.5)
+    m_posInit(radius*5)
 {
     _neighbor_radius = m_radius * 1.3f;
     _grid_segs = 1 / _neighbor_radius;
@@ -102,8 +101,11 @@ SPH::SPH(int n, float radius) :
     m_grid.resize(_grid_segs * _grid_segs * _grid_segs);
 
     //initialize position
-    m_posInit.addBox(Vector3f(0.5, 0.15, 0.5), 1, 0.2, 1);
-    m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.1);
+    m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 0.4, 0.2, 0.4);
+//    m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.1);
+
+    m_numParticles = m_posInit.getNumParticles();
+    cout << "num" << m_numParticles << endl;
 
     for(int i = 0; i < m_posInit.getNumParticles(); i++){
 //    for(int i = 0; i < n; i++){
@@ -124,7 +126,7 @@ vector<shared_ptr<particle>> SPH::find_neighs(int pi)
 {
     shared_ptr<particle> &cur = m_particle_list.at(pi);
     vector<shared_ptr<particle>> neighs;
-    assert(inBounds(cur->position));
+//    assert(inBounds(cur->position));
     Vector3i place = gridPlace(cur->position);
     for(int x = max(0, place[0] - _max_grid_search); x <= min(_grid_segs - 1, place[0] + _max_grid_search); x++) {
         for(int y = max(0, place[1] - _max_grid_search); y <= min(_grid_segs - 1, place[1] + _max_grid_search); y++) {
@@ -315,13 +317,15 @@ void SPH::draw(Shader *shader) {
     static Shape shape = get_sphere_shape(m_radius, 4);
     for(int i = 0; i < m_particle_list.size(); i++) {
         auto& ptcl = m_particle_list[i];
-        cout << "pos=" << ptcl->position;
+//        cout << "pos=" << ptcl->position;
         shape.setModelMatrix(Eigen::Affine3f(Eigen::Translation3f(ptcl->position[0], ptcl->position[1], ptcl->position[2])));
         shape.draw(shader);
     }
 }
 
 Vector3d SPH::getPos(int particle) const{
+//    cout << "particle:" << particle << endl;
+//    cout << "size:" << m_particle_list.size() << endl;
     return m_particle_list[particle]->position;
 }
 //TODO: find the correct volume by intialize the particle uniformly

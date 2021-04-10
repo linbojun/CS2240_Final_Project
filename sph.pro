@@ -6,6 +6,9 @@ TEMPLATE = app
 QMAKE_CXXFLAGS += -mstackrealign
 CONFIG += c++17
 
+#CONFIG += sanitizer sanitize_address
+#CONFIG += sanitizer sanitize_undefined
+
 unix:!macx {
     LIBS += -lGLU
 }

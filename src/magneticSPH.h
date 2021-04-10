@@ -10,43 +10,6 @@
 #include <math.h>
 
 
-//class SPH
-//{
-//private:
-//     Eigen::Vector3d m_pos = Eigen::Vector3d(0.0, 0.0, 0.0);
-//     int m_num_particles = 0;
-//     Eigen::VectorXd m_B = Eigen::VectorXd::Zero(10);
-//     double m_mu = 0.0;
-//public:
-//    SPH(){
-//     }
-
-//    Eigen::Vector3d getPos(int particle) const {
-//        return m_pos;
-//    };
-
-//    int getParticles() const{
-//        return m_num_particles;
-//    };
-
-//    double getVolume() const {
-//        return 0.0;
-//    };
-//    double getMagneticSusceptibility() const {
-//        return 0.0;
-//    };
-//    Eigen::VectorXd getExternalB() const{
-//        return m_B;
-//    };
-//    double getPermeability() const{
-//        return m_mu;
-//    };
-//    double getGamma() const{
-//        double V = getVolume();
-//        double chi = getMagneticSusceptibility();
-//        return V * chi / (1 + chi);
-//    }
-//};
 
 const float _chi = 0.1f;
 const float _mu_0 = 4 * M_PI * 1e-7;
@@ -66,7 +29,7 @@ private:
     Eigen::VectorXd m_guess;
     bool m_isFirst = true;
 
-    Eigen::ConjugateGradient<Eigen::Matrix4d, Eigen::Lower| Eigen::Upper> m_cg;
+    Eigen::ConjugateGradient<Eigen::MatrixXd, Eigen::Lower| Eigen::Upper> m_cg;
 
     double w (const double q) const;
     double w_avr (const double q) const;
