@@ -63,7 +63,7 @@ protected:
 
 private:
 	int size;
-    //int m_numParticles;
+    int m_numParticles;
     float m_radius;
     float _neighbor_radius;
     int _grid_segs;

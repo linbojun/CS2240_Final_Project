@@ -1,6 +1,7 @@
 #include "magneticSPH.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <iostream>
 
 using namespace std;
 using namespace Eigen;
@@ -8,11 +9,13 @@ using namespace Eigen;
 MagneticSPH::MagneticSPH(int n, float radius, double h):
     SPH(n, radius), m_h(h)
 {
+    m_Bext = VectorXd::Zero(3 * this->getNumParticle());
 }
 
 void MagneticSPH::update(float seconds)
 {
-    VectorXd F;
+    cout << "time:" << seconds << endl;;
+    VectorXd F(3 * getNumParticle());
     calculateMagneticForce(F);
     for(unsigned int i = 0; i < m_particle_list.size(); i++)
     {
@@ -53,7 +56,9 @@ void MagneticSPH::update(float seconds)
 
 void MagneticSPH::buildProblem(MatrixXd& mat){
     double Gamma = getGamma();
+    cout << "getGamme" << endl;
     // room for paralellization
+    cout << "num:" << getNumParticle() << endl;
     for (int particle = 0; particle <  getNumParticle(); ++particle) {
         for (int neighbor = 0; neighbor <  getNumParticle(); ++neighbor) {
             
@@ -81,7 +86,11 @@ void MagneticSPH::buildProblem(MatrixXd& mat){
                         int idx1 = particle * 3 + j;
                         int idx2 = neighbor * 3 + l;
 
+//                        cout << "index" <<idx1 << " " << idx2 << endl;
+//                        cout << "delta" << delta(idx1, idx2) << endl;
+//                        cout << "G" << Gamma * G << endl;
                         mat(idx1, idx2) = delta(idx1, idx2) - Gamma * G;
+//                        cout << "assigned" << endl;
                     }
                 }
             }
@@ -90,9 +99,14 @@ void MagneticSPH::buildProblem(MatrixXd& mat){
 }
 
 VectorXd MagneticSPH::calculateMagneticForce(VectorXd &F) {
-    MatrixXd mat;
+
+//    cout << "calculateMagneticForce" << endl;
+    MatrixXd mat(3 * getNumParticle(), 3 * getNumParticle());
+//    cout << "insytantiate matrix" << endl;
     buildProblem(mat);
+//     cout << "build Problem" << endl;
     VectorXd m = getGamma() * calculateMagneticField(mat);
+//     cout << "build m" << endl;
     double mu_0 = getPermeability();
     // room for paralellization
     for (int target = 0; target < getNumParticle(); ++target) {

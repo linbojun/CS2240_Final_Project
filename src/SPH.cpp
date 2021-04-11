@@ -90,7 +90,7 @@ Shape get_sphere_shape(float r, int res) {
 
 SPH::SPH(int n, float radius) :
     m_radius(radius),
-    m_posInit(radius*2)
+    m_posInit(radius*5)
 {
     _neighbor_radius = m_radius * 2.f;
     _grid_segs = 1 / _neighbor_radius;
@@ -101,8 +101,16 @@ SPH::SPH(int n, float radius) :
     m_grid.resize(_grid_segs * _grid_segs * _grid_segs);
 
     //initialize position
-    m_posInit.addBox(Vector3f(0.5, 0.07, 0.5), 1, 0.14, 1);
-    m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.1, Vector3f(0, -.5, 0));
+
+    //m_posInit.addBox(Vector3f(0.5, 0.07, 0.5), 1, 0.14, 1);
+    //m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.1, Vector3f(0, -.5, 0));
+
+    m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 0.4, 0.2, 0.4);
+//    m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.1);
+
+    m_numParticles = m_posInit.getNumParticles();
+    cout << "num" << m_numParticles << endl;
+
 
     for(int i = 0; i < m_posInit.getNumParticles(); i++){
 //    for(int i = 0; i < n; i++){
@@ -123,7 +131,7 @@ vector<shared_ptr<particle>> SPH::find_neighs(int pi)
 {
     shared_ptr<particle> &cur = m_particle_list.at(pi);
     vector<shared_ptr<particle>> neighs;
-    assert(inBounds(cur->position));
+//    assert(inBounds(cur->position));
     Vector3i place = gridPlace(cur->position);
     for(int x = max(0, place[0] - _max_grid_search); x <= min(_grid_segs - 1, place[0] + _max_grid_search); x++) {
         for(int y = max(0, place[1] - _max_grid_search); y <= min(_grid_segs - 1, place[1] + _max_grid_search); y++) {
@@ -192,7 +200,7 @@ Vector3d SPH::tension_dvdt(shared_ptr<particle> cur)
         auto rab = ra - rb;
         if(rab.norm() < 2*m_radius)
         {
-            tension_a += -0.05f * W(_dh, _dh) * rab;
+            tension_a += -0.05f * W(rab.norm(), _dh) * rab;
         }
     }
      return tension_a;
@@ -320,6 +328,8 @@ void SPH::draw(Shader *shader) {
 }
 
 Vector3d SPH::getPos(int particle) const{
+//    cout << "particle:" << particle << endl;
+//    cout << "size:" << m_particle_list.size() << endl;
     return m_particle_list[particle]->position;
 }
 //TODO: find the correct volume by intialize the particle uniformly

@@ -28,7 +28,6 @@ public:
 
     const Eigen::Matrix4f getView();
     const Eigen::Matrix4f getProjection();
-
     const Eigen::Vector3f getLook();
 
     void setOrbit(bool orbit);
