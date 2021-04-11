@@ -34,7 +34,8 @@ void Simulation::init(int num_particles, float timestep, float radius)
 
 void Simulation::update(float time)
 {
-    m_sph->update(m_timestep);
+    for(int i = 0; i < 1; i++)
+        m_sph->update(m_timestep);
 }
 
 void Simulation::draw(Shader *shader)

@@ -47,7 +47,7 @@ public:
     virtual void update(float time_step);
     void draw(Shader *shader);
     const std::vector<std::shared_ptr<particle>> &getParticles() { return m_particle_list; }
-    int getNumParticle() const {return m_numParticles; }
+    int getNumParticle() const {return m_particle_list.size(); }
 
     Eigen::Vector3d getPos(int particle) const;
     double getVolume() const;
@@ -63,13 +63,13 @@ protected:
 
 private:
 	int size;
-    int m_numParticles;
+    //int m_numParticles;
     float m_radius;
     float _neighbor_radius;
-    int _grid_segs = 1 / _neighbor_radius;
-    float _voxel_len = 1.f/_grid_segs;
-    int _max_grid_search = ceil(_neighbor_radius / _voxel_len);
-    float _dh =_neighbor_radius;
+    int _grid_segs;
+    float _voxel_len;
+    int _max_grid_search;
+    float _dh;
 
     PositionInit m_posInit;
 
