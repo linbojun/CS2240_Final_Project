@@ -90,7 +90,7 @@ Shape get_sphere_shape(float r, int res) {
 
 SPH::SPH(int n, float radius) :
     m_radius(radius),
-    m_posInit(radius*5)
+    m_posInit(radius*2)
 {
     _neighbor_radius = m_radius * 2.f;
     _grid_segs = 1 / _neighbor_radius;
