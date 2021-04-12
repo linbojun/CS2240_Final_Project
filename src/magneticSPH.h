@@ -4,6 +4,7 @@
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
 #include "Eigen/SparseQR"
+#include "magneticinit.h"
 #include "SPH.h"
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -23,6 +24,11 @@ public:
     void update(float time_step) override;
 
 private:
+    int m_t = 0;
+    int m_subupdate = 1;
+
+
+    Eigen::VectorXd m_magneticForce;
     Eigen::VectorXd m_Bext;
     double m_h;
 

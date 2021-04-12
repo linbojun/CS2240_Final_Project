@@ -7,21 +7,38 @@ using namespace std;
 using namespace Eigen;
 
 MagneticSPH::MagneticSPH(int n, float radius, double h):
-    SPH(n, radius), m_h(h)
+    SPH(n, radius), m_h(h), m_subupdate(5)
 {
-    m_Bext = VectorXd::Zero(3 * this->getNumParticle());
+
+    m_Bext = VectorXd(3 * this->getNumParticle());
+    MagneticInit Binit;
+
+    for (int particle = 0; particle < getNumParticle(); ++particle){
+        Vector3d bExt = Binit.getMagneticField(getPos(particle));
+        for (int i : {0, 1, 2}){
+            m_Bext(3 * particle + i) = bExt(i);
+        }
+    }
+
+
+    m_magneticForce = VectorXd(3 * this->getNumParticle());
+    calculateMagneticForce(m_magneticForce);
+
 }
 
 void MagneticSPH::update(float seconds)
 {
     cout << "time:" << seconds << endl;;
-    VectorXd F(3 * getNumParticle());
-    calculateMagneticForce(F);
+
+    if (m_t % m_subupdate == 0){
+        calculateMagneticForce(m_magneticForce);
+    }
+
     for(unsigned int i = 0; i < m_particle_list.size(); i++)
     {
         shared_ptr<particle> cur = m_particle_list.at(i);
         cur->neighs  = find_neighs(i);
-        cur->dvdt = total_dvdt(cur) + Vector3d(F(3*i), F(3*i+1), F(3*i+2))/cur->mass;
+        cur->dvdt = total_dvdt(cur) + Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2))/cur->mass;
         cur->drhodt = single_drhodt(cur);
     }
     for(unsigned int i = 0; i < m_particle_list.size(); i++)
@@ -39,6 +56,8 @@ void MagneticSPH::update(float seconds)
         cur->velocity += seconds * cur->dvdt;
     }
     boundry_collision();
+
+    ++m_t;
 }
 
  VectorXd MagneticSPH::calculateMagneticField(const MatrixXd& A){
