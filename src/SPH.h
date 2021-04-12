@@ -39,6 +39,7 @@ typedef struct particle{
     std::vector<std::shared_ptr<particle>> neighs;
     Eigen::Vector3d dvdt;
     double drhodt;
+    Eigen::Vector3d normal;
 } particle;
 
 class SPH{
@@ -91,6 +92,8 @@ private:
     Eigen::Vector3i gridPlace(const Eigen::Vector3d& pos);
 
     Eigen::Vector3d tension_dvdt(std::shared_ptr<particle> cur);
+    Eigen::Vector3d single_normal(std::shared_ptr<particle> cur);
+
 
 
     int gridPlaceIndex(const Eigen::Vector3i& place);
@@ -102,6 +105,61 @@ private:
 static inline double W(double r, double h);
 static inline double dW(double r, double h);
 static inline Eigen::Vector3d gradW(Eigen::Vector3d r, double h);
+static inline double W_poly6(Eigen::Vector3d r, double h)
+{
+
+  double coefficient = 315.0/(64.0*M_PI*pow(h,9));
+  double r_squared = r.dot(r);
+
+  return coefficient * pow(h*h-r_squared, 3);
+}
+
+static inline Eigen::Vector3d gradW_poly6(Eigen::Vector3d r, double h)
+{
+
+  static double coefficient = -945.0/(32.0*M_PI*pow(h,9));
+  double r_squared = r.dot(r);
+  return coefficient * pow(h*h - r_squared, 2) * r;
+}
+
+static inline double LaplacianW_poly6(Eigen::Vector3d r, double h)
+{
+  static double coefficient = -945.0/(32.0*M_PI*pow(h,9));
+  double r_squared = r.dot(r);
+
+  return coefficient * (h*h-r_squared) * (3.0*h*h - 7.0*r_squared);
+}
+
+static inline Eigen::Vector3d gradW_spiky(Eigen::Vector3d r, double h)
+{
+
+  static double coefficient = -45.0/(M_PI*pow(h,6));
+  double radius = r.norm();
+  return coefficient * pow(h-radius, 2) * r / radius;
+}
+
+
+static inline double LaplacianW_viscosity(Eigen::Vector3d r, double h)
+{
+  static double coefficient = 45.0/(M_PI*pow(h,6));
+  double radius = r.norm();
+  return coefficient * (h - radius);
+}
+
+static inline double W_cohesion(Eigen::Vector3d r, double h)
+{
+    double coefficient = 32.0/(M_PI * pow(h, 9));
+    double ans = 0;
+    if(2*r.norm() > h && r.norm() <= h)
+    {
+        ans = coefficient * pow(h - r.norm(), 3) * pow(r.norm(), 3);
+    }
+    else if(r.norm() >0 && 2*r.norm() <= h)
+    {
+        ans = coefficient *2.0 * pow(h - r.norm(), 3) * pow(r.norm(), 3); - pow(h, 6)/64.0;
+    }
+    return ans;
+}
 
 
 #endif

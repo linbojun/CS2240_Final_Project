@@ -161,6 +161,7 @@ void SPH::update(float seconds)
     {
         shared_ptr<particle> cur = m_particle_list.at(i);
         cur->neighs  = find_neighs(i);
+        single_normal(cur);
         auto dvdt = total_dvdt(cur);
         cur->drhodt = single_drhodt(cur);
         cur->dvdt = dvdt;
@@ -182,6 +183,21 @@ void SPH::update(float seconds)
     boundry_collision();
 }
 
+Vector3d SPH::single_normal(shared_ptr<particle> cur)
+{
+    Vector3d zeros(0,0,0);
+    cur->normal = zeros;
+    double normal_scale = 1;
+    auto ra = cur->position;
+     for(auto neigh: cur->neighs){
+         auto rb = cur->position;
+         auto rab = ra-rb;
+         cur->normal += normal_scale * neigh->mass / neigh->density *gradW(rab, _dh);
+     }
+     return cur->normal;
+
+}
+
 Vector3d SPH::total_dvdt(shared_ptr<particle> cur)
 {
     Vector3d dvdt(0,0,0);
@@ -191,19 +207,43 @@ Vector3d SPH::total_dvdt(shared_ptr<particle> cur)
     return dvdt;
 }
 
+//Vector3d SPH::tension_dvdt(shared_ptr<particle> cur)
+//{
+//    Vector3d tension_a(0, 0, 0);
+//    auto ra = cur->position;
+//    for(auto neigh: cur->neighs){
+//        auto rb = neigh->position;
+//        auto rab = ra - rb;
+//        if(rab.norm() < 2*m_radius)
+//        {
+//            tension_a += -0.05f * W(rab.norm(), _dh) * rab;
+//        }
+//    }
+//     return tension_a;
+//}
+
 Vector3d SPH::tension_dvdt(shared_ptr<particle> cur)
 {
-    Vector3d tension_a(0, 0, 0);
+    double normal_threshold = 8;
+    double surface_tension =  0.0728 ;
+    Vector3d cohesion_force(0,0,0);
+    Vector3d curvatur_force(0,0,0);
+    Vector3d tension_force(0, 0, 0);
+    Vector3d normal(0,0,0);
+    double color_Laplacian = 0;
     auto ra = cur->position;
     for(auto neigh: cur->neighs){
         auto rb = neigh->position;
         auto rab = ra - rb;
-        if(rab.norm() < 2*m_radius)
-        {
-            tension_a += -0.05f * W(rab.norm(), _dh) * rab;
-        }
+
+        cohesion_force += -surface_tension * cur->mass * neigh->mass * rab / rab.norm() * W_cohesion(rab, _dh);
+        curvatur_force += -surface_tension * cur->mass * (cur->normal - neigh->normal);
+        auto k_ab = 2 * _rho0 / (cur->density + neigh->density);
+        tension_force = k_ab * (cohesion_force + curvatur_force);
+
     }
-     return tension_a;
+
+     return tension_force / cur->mass;
 }
 Vector3d SPH::momentum_dvdt(shared_ptr<particle> cur)
 {
