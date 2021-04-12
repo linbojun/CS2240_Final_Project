@@ -204,6 +204,7 @@ Vector3d SPH::total_dvdt(shared_ptr<particle> cur)
     dvdt += momentum_dvdt(cur);
     dvdt += viscosity_dvdt(cur);
     dvdt += tension_dvdt(cur);
+    dvdt += adhesion_dvdt(cur);
     return dvdt;
 }
 
@@ -245,6 +246,22 @@ Vector3d SPH::tension_dvdt(shared_ptr<particle> cur)
 
      return tension_force / cur->mass;
 }
+
+Vector3d SPH::adhesion_dvdt(shared_ptr<particle> cur)
+{
+    double surface_adhesion = 0.0728 ;
+    auto ra = cur->position;
+    Vector3d adhesion_force(0,0,0);
+    for(auto neigh: cur->neighs){
+        auto rb = neigh->position;
+        auto rab = ra- rb;
+        adhesion_force += -surface_adhesion * cur->mass * neigh->mass * rab/rab.norm() * W_adhesion(rab, _dh);
+
+    }
+    return adhesion_force / cur->mass;
+
+
+}
 Vector3d SPH::momentum_dvdt(shared_ptr<particle> cur)
 {
     Vector3d gravity(0,-0.1,0);
@@ -262,6 +279,8 @@ Vector3d SPH::momentum_dvdt(shared_ptr<particle> cur)
     dvdt += gravity;
     return dvdt;
 }
+
+
 
 Vector3d SPH::viscosity_dvdt(shared_ptr<particle> cur)
 {

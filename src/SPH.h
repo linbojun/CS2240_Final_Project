@@ -89,9 +89,11 @@ private:
     void euler_step();
     Eigen::Vector3d momentum_dvdt(std::shared_ptr<particle> cur);
     Eigen::Vector3d viscosity_dvdt(std::shared_ptr<particle> cur);
+    Eigen::Vector3d tension_dvdt(std::shared_ptr<particle> cur);
+    Eigen::Vector3d adhesion_dvdt(std::shared_ptr<particle> cur);
+
     Eigen::Vector3i gridPlace(const Eigen::Vector3d& pos);
 
-    Eigen::Vector3d tension_dvdt(std::shared_ptr<particle> cur);
     Eigen::Vector3d single_normal(std::shared_ptr<particle> cur);
 
 
@@ -160,6 +162,20 @@ static inline double W_cohesion(Eigen::Vector3d r, double h)
     }
     return ans;
 }
+
+static inline double W_adhesion(Eigen::Vector3d r, double h)
+{
+    double coefficient = 0.007/pow(h, 3.25);
+    double ans = 0;
+    if(2*r.norm() > h && r.norm() <= h)
+    {
+        auto token = -4*r.norm() *r.norm()/h +6*r.norm()-2*h;
+        ans = coefficient * pow( token, 0.25);
+    }
+    return ans;
+
+}
+
 
 
 #endif
