@@ -20,7 +20,7 @@ public:
 
 
 private:
-    std::shared_ptr<MagneticSPH> m_sph;
+    std::shared_ptr<SPH> m_sph;
     Shape m_ground;
     float m_timestep;
 };

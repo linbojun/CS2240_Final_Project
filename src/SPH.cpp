@@ -69,7 +69,7 @@ Shape get_sphere_shape(float r, int res) {
     }
     // idx = thetas*18 + phis - 1
     for(int thetas = 1; thetas < res+1; thetas++) {
-        for(int phis = 2; phis < res-1; phis++) {
+        for(int phis = 2; phis < res; phis++) {
             faces.push_back(Vector3i((thetas%res)*(res-2) + phis - 1, (thetas-1)*(res-2) + phis - 1, (thetas-1)*(res-2) + phis - 2));
             faces.push_back(Vector3i((thetas%res)*(res-2) + phis - 1, (thetas-1)*(res-2) + phis - 2, (thetas%res)*(res-2) + phis - 2));
         }
@@ -92,7 +92,7 @@ SPH::SPH(int n, float radius) :
     m_radius(radius),
     m_posInit(radius*5)
 {
-    _neighbor_radius = m_radius * 1.3f;
+    _neighbor_radius = m_radius * 2.f;
     _grid_segs = 1 / _neighbor_radius;
     _voxel_len = 1.f/_grid_segs;
     _max_grid_search = ceil(_neighbor_radius / _voxel_len);
@@ -101,11 +101,16 @@ SPH::SPH(int n, float radius) :
     m_grid.resize(_grid_segs * _grid_segs * _grid_segs);
 
     //initialize position
+
+    //m_posInit.addBox(Vector3f(0.5, 0.07, 0.5), 1, 0.14, 1);
+    //m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.1, Vector3f(0, -.5, 0));
+
     m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 0.4, 0.2, 0.4);
 //    m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.1);
 
     m_numParticles = m_posInit.getNumParticles();
     cout << "num" << m_numParticles << endl;
+
 
     for(int i = 0; i < m_posInit.getNumParticles(); i++){
 //    for(int i = 0; i < n; i++){
@@ -114,7 +119,7 @@ SPH::SPH(int n, float radius) :
         Vector3d zeros(0,0,0);
 //        updateParticlePos(i, Vector3d::Random() * 0.5 + Vector3d(0.5, 0.5, 0.5));
         updateParticlePos(i, m_posInit.getPt(i).cast<double> ());
-        new_particle->velocity = zeros;
+        new_particle->velocity = m_posInit.getVel(i).cast<double>();
         new_particle->pressure = 0;
         new_particle->density = _rho0;
         new_particle->mass = m_radius * m_radius * m_radius * _rho0;
@@ -188,17 +193,17 @@ Vector3d SPH::total_dvdt(shared_ptr<particle> cur)
 
 Vector3d SPH::tension_dvdt(shared_ptr<particle> cur)
 {
-    Vector3d tension_force(0, 0, 0);
+    Vector3d tension_a(0, 0, 0);
     auto ra = cur->position;
     for(auto neigh: cur->neighs){
         auto rb = neigh->position;
         auto rab = ra - rb;
-        if(rab.norm() < 2 * m_radius)
+        if(rab.norm() < 2*m_radius)
         {
-            tension_force += 1000.0f * cur->mass * cur->mass * cos(3 * M_PI/ (4 * m_radius) * rab.norm()) * rab;
+            tension_a += -0.05f * W(rab.norm(), _dh) * rab;
         }
     }
-     return tension_force / cur->mass;
+     return tension_a;
 }
 Vector3d SPH::momentum_dvdt(shared_ptr<particle> cur)
 {
@@ -314,10 +319,9 @@ void SPH::updateParticlePos(int i, Vector3d newPos, bool initializing) {
 }
 
 void SPH::draw(Shader *shader) {
-    static Shape shape = get_sphere_shape(m_radius, 4);
+    static Shape shape = get_sphere_shape(m_radius, 10);
     for(int i = 0; i < m_particle_list.size(); i++) {
         auto& ptcl = m_particle_list[i];
-//        cout << "pos=" << ptcl->position;
         shape.setModelMatrix(Eigen::Affine3f(Eigen::Translation3f(ptcl->position[0], ptcl->position[1], ptcl->position[2])));
         shape.draw(shader);
     }
