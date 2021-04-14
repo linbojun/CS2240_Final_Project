@@ -90,7 +90,7 @@ Shape get_sphere_shape(float r, int res) {
 
 SPH::SPH(int n, float radius) :
     m_radius(radius),
-    m_posInit(radius*2)
+    m_posInit(radius*1.3)
 {
     _neighbor_radius = m_radius * 2.f;
     _grid_segs = 1 / _neighbor_radius;
@@ -105,8 +105,8 @@ SPH::SPH(int n, float radius) :
     //m_posInit.addBox(Vector3f(0.5, 0.07, 0.5), 1, 0.14, 1);
     //m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.1, Vector3f(0, -.5, 0));
 
-    m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 0.4, 0.2, 0.4);
-//    m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.1);
+//    m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 0.4, 0.2, 0.4);
+    m_posInit.addSphere(Vector3f(0.5, 0.2, 0.5), 0.2, Vector3f(0.0, 0.0, 0.0));
 
     m_numParticles = m_posInit.getNumParticles();
     cout << "num" << m_numParticles << endl;
@@ -207,7 +207,8 @@ Vector3d SPH::tension_dvdt(shared_ptr<particle> cur)
 }
 Vector3d SPH::momentum_dvdt(shared_ptr<particle> cur)
 {
-    Vector3d gravity(0,-0.1,0);
+//    Vector3d gravity(0,-0.1,0);
+    Vector3d gravity(0,0,0);
     Vector3d dvdt(0,0,0);
     auto ra = cur->position;
     auto pa = cur->pressure;
