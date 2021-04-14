@@ -26,6 +26,7 @@ SOURCES += \
     src/graphics/camera.cpp \
     src/graphics/MeshLoader.cpp \
     src/magneticSPH.cpp \
+    src/magneticinit.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
     src/positioninit.cpp \
@@ -42,6 +43,7 @@ HEADERS += \
     src/graphics/GraphicsDebug.h \
     src/graphics/shape.h \
     src/graphics/camera.h \
+    src/magneticinit.h \
     src/mainwindow.h \
     src/magneticSPH.h \
     src/positioninit.h \
