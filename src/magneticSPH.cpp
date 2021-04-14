@@ -13,7 +13,7 @@ MagneticSPH::MagneticSPH(int n, float radius, double h):
 
     m_Bext = VectorXd(3 * this->getNumParticle());
     MagneticInit Binit;
-//    Binit.addConstField(Vector3d(0.0, 2e-4, 0.0));
+    Binit.addConstField(Vector3d(0.0, 2e-4, 0.0));
 //    Binit.addConstField(Vector3d(0.0, 0.0, 0.0));
 
     for (int particle = 0; particle < getNumParticle(); ++particle){
