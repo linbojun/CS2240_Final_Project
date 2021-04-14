@@ -21,6 +21,7 @@ public:
     
     MagneticSPH(int n, float radius, double h);
     void update(float time_step) override;
+    void draw(Shader *shader) override;
 
 private:
     Eigen::VectorXd m_Bext;

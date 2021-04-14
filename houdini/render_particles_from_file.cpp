@@ -97,7 +97,7 @@ densityFunction(const UT_Vector3 &P, void *data)
 void
 sopCreateBall(GU_Detail *to, float x, float y, float z)
 {
-    if(true) {
+    if(false) {
         GA_Offset ptoff = to->appendPointOffset();
         to->setPos3(ptoff, x, y, z);
         return;
@@ -107,9 +107,9 @@ sopCreateBall(GU_Detail *to, float x, float y, float z)
         ball.weight = 200;
         // Position and scale the collision sphere to account for the
         // deformation animation.
-        ball.xform.scale(0.005, 0.005, 0.005);
+        ball.xform.scale(0.02, 0.02, 0.02);
         ball.xform.translate(x, y, z);
-        GU_PrimMetaBall::build(ball, "blinn");
+        GU_PrimMetaBall::build(ball);
     } else {
         GU_PrimSphereParms ball(to);
         //ball.weight = 200;

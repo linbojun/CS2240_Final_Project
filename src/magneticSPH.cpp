@@ -2,6 +2,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <iostream>
+#include <Eigen/Core>
 
 using namespace std;
 using namespace Eigen;
@@ -260,4 +261,66 @@ double MagneticSPH::getGamma() const{
     double V = getVolume();
     double chi = getMagneticSusceptibility();
     return V * chi / (1 + chi);
+}
+
+Shape getLineShape() {
+    // center of coordinate sys = one end of line, line pointing in +x direction
+    // triangular prism
+    std::vector<Eigen::Vector3f> points = {
+        Eigen::Vector3f(0, cos(0)*0.05, sin(0)*0.05),
+        Eigen::Vector3f(0, cos(M_PI/3)*0.05, sin(M_PI/3)*0.05),
+        Eigen::Vector3f(0, cos(2*M_PI/3)*0.05, sin(2*M_PI/3)*0.05),
+        Eigen::Vector3f(1, cos(0)*0.05, sin(0)*0.05),
+        Eigen::Vector3f(1, cos(M_PI/3)*0.05, sin(M_PI/3)*0.05),
+        Eigen::Vector3f(1, cos(2*M_PI/3)*0.05, sin(2*M_PI/3)*0.05),
+    };
+    std::vector<Eigen::Vector3i> faces(8);
+    faces[0] =
+        Eigen::Vector3i(0, 1, 2);
+            faces[1] =
+        Eigen::Vector3i(3, 4, 5);
+            faces[2] =
+        Eigen::Vector3i(0, 3, 1);
+            faces[3] =
+        Eigen::Vector3i(1, 3, 4);
+            faces[4] =
+        Eigen::Vector3i(1, 4, 2);
+            faces[5] =
+        Eigen::Vector3i(2, 4, 5);
+            faces[6] =
+        Eigen::Vector3i(2, 5, 0);
+            faces[7] =
+        Eigen::Vector3i(0, 5, 3);
+    Shape shape;
+    shape.init(points, faces, true);
+    shape.setVertices(points);
+    return shape;
+}
+
+void MagneticSPH::draw(Shader *shader) {
+    SPH::draw(shader);//return;
+    static Shape shape = getLineShape();
+    if(m_guess.size() == 0) {
+        return;
+    } else {
+        assert(m_guess.size() == m_particle_list.size() * 3);
+    }
+    std::cout << "drawing\n";
+    for(int i = 0; i < m_particle_list.size(); i++) {
+        Eigen::Vector3f guess(m_guess[3 * i], m_guess[3 * i + 1], m_guess[3 * i + 2]);
+        if(guess.norm() == 0)
+            continue;
+        std::cout << "linee\n";
+        auto& ptcl = m_particle_list[i];
+        Eigen::Affine3f mat;
+        Eigen::AngleAxis<float> aa;
+        Quaternionf q;
+        q = Quaternionf().setFromTwoVectors(Eigen::Vector3f(0, 0, 1), guess);
+        aa = q;
+        mat = aa;
+        mat.translate(Eigen::Vector3f(ptcl->position[0], ptcl->position[1], ptcl->position[2]));
+
+        shape.setModelMatrix(mat);
+        shape.draw(shader);
+    }
 }

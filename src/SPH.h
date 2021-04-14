@@ -45,7 +45,7 @@ class SPH{
 public:
     SPH(int n, float radius);
     virtual void update(float time_step);
-    void draw(Shader *shader);
+    virtual void draw(Shader *shader);
     const std::vector<std::shared_ptr<particle>> &getParticles() { return m_particle_list; }
     int getNumParticle() const {return m_particle_list.size(); }
 
