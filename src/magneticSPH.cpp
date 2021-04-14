@@ -13,7 +13,8 @@ MagneticSPH::MagneticSPH(int n, float radius, double h):
 
     m_Bext = VectorXd(3 * this->getNumParticle());
     MagneticInit Binit;
-    Binit.addConstField(Vector3d(0.0, 1e-3, 0.0));
+//    Binit.addConstField(Vector3d(0.0, 2e-4, 0.0));
+//    Binit.addConstField(Vector3d(0.0, 0.0, 0.0));
 
     for (int particle = 0; particle < getNumParticle(); ++particle){
         Vector3d bExt = Binit.getMagneticField(getPos(particle));
@@ -30,7 +31,9 @@ MagneticSPH::MagneticSPH(int n, float radius, double h):
 
 void MagneticSPH::update(float seconds)
 {
-    cout << "time:" << seconds << endl;;
+
+    if (true){
+    cout << "time:" << seconds << endl;
 
     if (m_t % m_subupdate == 0){
         cout << "update Magnet" << endl;
@@ -61,6 +64,9 @@ void MagneticSPH::update(float seconds)
     boundry_collision();
 
     ++m_t;
+    }
+
+
 }
 
  VectorXd MagneticSPH::calculateMagneticField(const MatrixXd& A){
@@ -128,6 +134,9 @@ VectorXd MagneticSPH::calculateMagneticForce(VectorXd &F) {
     buildProblem(mat);
 //     cout << "build Problem" << endl;
     VectorXd m = getGamma() * calculateMagneticField(mat);
+    for (int i = 0; i < getNumParticle(); ++i){
+        cout << "m: (" << m(3*i) << ", " << m(3*i+1) << ", " << m(3*i +2) << ")" << endl;
+    }
 //     cout << "build m" << endl;
     double mu_0 = getPermeability();
     // room for paralellization
@@ -158,6 +167,9 @@ VectorXd MagneticSPH::calculateMagneticForce(VectorXd &F) {
         F(3*target+1) = targetForce(1);
         F(3*target+2) = targetForce(2);
     }
+
+
+
     return F;
 }
 
