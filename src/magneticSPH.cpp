@@ -326,20 +326,20 @@ void MagneticSPH::draw(Shader *shader) {
     } else {
         assert(m_guess.size() == m_particle_list.size() * 3);
     }
-    std::cout << "drawing\n";
     for(int i = 0; i < m_particle_list.size(); i++) {
         Eigen::Vector3f guess(m_guess[3 * i], m_guess[3 * i + 1], m_guess[3 * i + 2]);
-        if(guess.norm() == 0)
+        if(guess.norm() < 0.000001)
             continue;
-        std::cout << "linee\n";
         auto& ptcl = m_particle_list[i];
-        Eigen::Affine3f mat;
+        Eigen::Affine3f mat = Eigen::Affine3f::Identity();
         Eigen::AngleAxis<float> aa;
         Quaternionf q;
-        q = Quaternionf().setFromTwoVectors(Eigen::Vector3f(0, 0, 1), guess);
+        q = Quaternionf().setFromTwoVectors(Eigen::Vector3f(1, 0, 0), guess);
         aa = q;
-        mat = aa;
+
         mat.translate(Eigen::Vector3f(ptcl->position[0], ptcl->position[1], ptcl->position[2]));
+        mat.rotate(aa);
+        mat.scale(Eigen::Vector3f(0.1, 0.1, 0.1));
 
         shape.setModelMatrix(mat);
         shape.draw(shader);
