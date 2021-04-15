@@ -295,7 +295,7 @@ void SPH::boundry_collision()
         auto &ptcl = m_particle_list[i];
         auto pos = ptcl->position;
         auto velo = ptcl->velocity;
-        double k = 0.4;
+        double k = 0;
         for(int i = 0; i < 3; i++)
         {
             if (pos[i] < 0)
