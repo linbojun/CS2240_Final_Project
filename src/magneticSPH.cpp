@@ -32,7 +32,6 @@ MagneticSPH::MagneticSPH(int n, float radius, double h):
 void MagneticSPH::update(float seconds)
 {
 
-    if (true){
     cout << "time:" << seconds << endl;
 
     if (m_t % m_subupdate == 0){
@@ -44,27 +43,34 @@ void MagneticSPH::update(float seconds)
     {
         shared_ptr<particle> cur = m_particle_list.at(i);
         cur->neighs  = find_neighs(i);
-        cur->dvdt = total_dvdt(cur) + Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2))/cur->mass;
         cur->drhodt = single_drhodt(cur);
+        cur->dvdt = total_dvdt(cur) + Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2))/cur->mass;
+
     }
     for(unsigned int i = 0; i < m_particle_list.size(); i++)
     {
         shared_ptr<particle> cur = m_particle_list.at(i);
-        updateParticlePos(i, cur->position + 0.5 * seconds * cur->velocity);
+
         cur->velocity += 0.5 * seconds * cur->dvdt;
+        updateParticlePos(i, cur->position + 0.5 * seconds * cur->velocity);
         cur->density += seconds * cur->drhodt;
         cur->pressure = single_pressure(cur);
+        updateParticlePos(i, cur->position + 0.5 * seconds * cur->velocity);
     }
     for(unsigned int i = 0; i < m_particle_list.size(); i++)
     {
         shared_ptr<particle> cur = m_particle_list.at(i);
-        updateParticlePos(i, cur->position + seconds * cur->velocity);
-        cur->velocity += seconds * cur->dvdt;
+        cur->neighs  = find_neighs(i);
+        cur->dvdt = total_dvdt(cur) + Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2))/cur->mass;
+    }
+    for(unsigned int i = 0; i < m_particle_list.size(); i++)
+    {
+        shared_ptr<particle> cur = m_particle_list.at(i);
+        cur->velocity += 0.5 * seconds * cur->dvdt;
     }
     boundry_collision();
 
     ++m_t;
-    }
 
 
 }

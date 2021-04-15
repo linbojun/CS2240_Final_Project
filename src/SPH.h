@@ -11,7 +11,7 @@
 
 const float _rho0 = 1000;
 const float _dt = 0.0001;
-const float _mu = 1;
+const float _mu = 5;
 const float _gamma = 7.0f;
 const float _c = 9.0f;
 
