@@ -34,6 +34,7 @@ SOURCES += \
     src/simulation.cpp \
     src/view.cpp \
     src/viewformat.cpp \
+    src/wcsph.cpp
 
 
 HEADERS += \
@@ -52,7 +53,9 @@ HEADERS += \
     src/view.h \
     src/viewformat.h \
     ui_mainwindow.h \
-    src/graphics/MeshLoader.h
+    src/graphics/MeshLoader.h \
+    src/Kernel.h \
+    src/wcsph.h
 
 FORMS += src/mainwindow.ui
 
