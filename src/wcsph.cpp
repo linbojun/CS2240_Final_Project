@@ -8,7 +8,7 @@ using namespace std;
 
 #define USE_WALL 0
 WCSPH::WCSPH():
-    m_posInit(ptcl_radius*3)
+    m_posInit(ptcl_radius*2.5)
 {
     kernel_radius = kernel_factor * ptcl_radius;
     fluid_ptcl_mass = 4.0/3.0 * M_PI * ptcl_radius * ptcl_radius * ptcl_radius;
@@ -175,11 +175,11 @@ void WCSPH::single_drhodt(shared_ptr<fluid_ptcl> cur)
         drhodt += fluid_ptcl_mass * vab.dot(kernel.poly6GradConstant * kernel.poly6Grad(rab, rab_sqr));
     }
 
-    cout<<"====================================="<<endl;
-    cout<<"density_old:"<<cur->density<<endl;
+//    cout<<"====================================="<<endl;
+//    cout<<"density_old:"<<cur->density<<endl;
     cur->density += drhodt * dt;
-    cout<<"drhodt:"<<drhodt<<endl;
-    cout<<"density_new:"<<cur->density<<endl;
+//    cout<<"drhodt:"<<drhodt<<endl;
+//    cout<<"density_new:"<<cur->density<<endl;
 
 }
 
@@ -187,7 +187,7 @@ void WCSPH::single_pressure(shared_ptr<fluid_ptcl> cur)
 {
     auto p0 = rho0 * _C * _C / _GAMMA;
     auto press= p0 * (pow(cur->density / rho0, _GAMMA) - 1.0);
-    cout<<endl<<"press:"<<press<<endl;
+//    cout<<endl<<"press:"<<press<<endl;
     cur->pressure = press > 0 ? press : 0;
 
 }
@@ -254,11 +254,11 @@ void WCSPH::update_all_density_and_pressure()
 
         double density = kernel.poly6Constant * fluid_ptcl_mass * fluid_density;
         density += kernel.poly6Constant * wall_density;
-        cout<<"=================================="<<endl;
-        cout<<"kernel.poly6Constant"<<kernel.poly6Constant<<endl;
-        cout<<"fluid_ptcl_mass"<<fluid_ptcl_mass<<endl;
-        cout<<"fluid_density: "<<fluid_density<<endl;
-        cout<<"density: "<<fluid_density<<endl;
+//        cout<<"=================================="<<endl;
+//        cout<<"kernel.poly6Constant"<<kernel.poly6Constant<<endl;
+//        cout<<"fluid_ptcl_mass"<<fluid_ptcl_mass<<endl;
+//        cout<<"fluid_density: "<<fluid_density<<endl;
+//        cout<<"density: "<<fluid_density<<endl;
 
 
 
@@ -267,10 +267,10 @@ void WCSPH::update_all_density_and_pressure()
         auto pressure = B * (pow(token, _GAMMA) - 1.0);
         fluid_ptcl->density = density;
         fluid_ptcl->pressure = pressure;
-        cout<<endl;
-        cout<<"B:"<<B<<endl;
-        cout<<"density / rho0:"<<density / rho0<<endl;
-        cout<<"pressure:"<<pressure<<endl;
+//        cout<<endl;
+//        cout<<"B:"<<B<<endl;
+//        cout<<"density / rho0:"<<density / rho0<<endl;
+//        cout<<"pressure:"<<pressure<<endl;
 
     }
 }
@@ -387,11 +387,11 @@ void WCSPH::update_net_force()
         net_force += forcePressure;
         net_force += forceViscosity;
         net_force += forceCohesion + forceCurvature;
-        cout<<"-------------------------------------"<<endl;
-        cout<<"forcePressure:"<<forcePressure<<endl;
-        cout<<"forceViscosity:"<<forceViscosity<<endl;
-        cout<<"forceCohesion:"<<forceCohesion<<endl;
-        cout<<"forceCurvature:"<<forceCurvature<<endl;
+//        cout<<"-------------------------------------"<<endl;
+//        cout<<"forcePressure:"<<forcePressure<<endl;
+//        cout<<"forceViscosity:"<<forceViscosity<<endl;
+//        cout<<"forceCohesion:"<<forceCohesion<<endl;
+//        cout<<"forceCurvature:"<<forceCurvature<<endl;
         //force += fluid_ptcl_mass * _gravity;
         cur_fluid->netForce = net_force;
     }
