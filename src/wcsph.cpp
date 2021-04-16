@@ -16,7 +16,7 @@ WCSPH::WCSPH():
 
     int num_fluid_particle = 1000;
     kernel.init(kernel_radius);
-    m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 0.4, 0.2, 0.4);
+    m_posInit.addBox(Vector3f(0.5, 0.4, 0.5), 0.2, 0.2, 0.2);
 
 
     //assume bound is x = 1,-1
@@ -24,28 +24,28 @@ WCSPH::WCSPH():
 //    {
 //         shared_ptr<fluid_ptcl> new_particle(new fluid_ptcl);
 //         _fluid_ptcl_list.push_back(new_particle);
-//         float rand_x = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/2));
-//         float rand_y = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/2));
-//         float rand_z = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/2));
-//         Vector3f pos(rand_x, rand_y, rand_z);
-//         Vector3f zeros(0,0,0);
+//         double rand_x = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/2));
+//         double rand_y = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/2));
+//         double rand_z = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/2));
+//         Vector3d pos(rand_x, rand_y, rand_z);
+//         Vector3d zeros(0,0,0);
 //         new_particle->position = pos;
 //         new_particle->velocity = zeros;
 //         new_particle->pressure = 0;
 //         new_particle->density = rho0;
 	
 //    }
-    float numParticles = m_posInit.getNumParticles();
+    double numParticles = m_posInit.getNumParticles();
     cout << "num" << numParticles << endl;
 
 
     for(int i = 0; i < m_posInit.getNumParticles(); i++){
          shared_ptr<fluid_ptcl> new_particle(new fluid_ptcl);
         _fluid_ptcl_list.push_back(new_particle);
-        Vector3f zeros(0,0,0);
+        Vector3d zeros(0,0,0);
 //        updateParticlePos(i, Vector3d::Random() * 0.5 + Vector3d(0.5, 0.5, 0.5));
         //updateParticlePos(i, m_posInit.getPt(i).cast<double> ());
-        new_particle->position = m_posInit.getPt(i);
+        new_particle->position = m_posInit.getPt(i).cast<double>();
         new_particle->velocity = zeros;
         new_particle->pressure = 0;
         new_particle->density = rho0;
@@ -134,7 +134,7 @@ void WCSPH::find_wall_neighs(shared_ptr<wall_ptcl> cur)
     }
 }
 
-void WCSPH::update(float time_step)
+void WCSPH::update(double time_step)
 {
 	
     update_all_neighs();
@@ -150,6 +150,7 @@ void WCSPH::update(float time_step)
 
 void WCSPH::update_all_density_and_pressure_old()
 {
+    cout<<"update_all_density_and_pressure_old()"<<endl;
     for(auto cur: _fluid_ptcl_list)
     {
         single_drhodt(cur);
@@ -159,7 +160,7 @@ void WCSPH::update_all_density_and_pressure_old()
 
 void WCSPH::single_drhodt(shared_ptr<fluid_ptcl> cur)
 {
-    float drhodt = 0;
+    double drhodt = 0;
     auto ra = cur->position;
     auto va = cur->velocity;
     auto neighs = cur->fluid_neighs;
@@ -176,7 +177,7 @@ void WCSPH::single_drhodt(shared_ptr<fluid_ptcl> cur)
 
     cout<<"====================================="<<endl;
     cout<<"density_old:"<<cur->density<<endl;
-    cur->density += drhodt;
+    cur->density += drhodt * dt;
     cout<<"drhodt:"<<drhodt<<endl;
     cout<<"density_new:"<<cur->density<<endl;
 
@@ -187,7 +188,7 @@ void WCSPH::single_pressure(shared_ptr<fluid_ptcl> cur)
     auto p0 = rho0 * _C * _C / _GAMMA;
     auto press= p0 * (pow(cur->density / rho0, _GAMMA) - 1.0);
     cout<<endl<<"press:"<<press<<endl;
-    cur->pressure = press;
+    cur->pressure = press > 0 ? press : 0;
 
 }
 
@@ -198,30 +199,30 @@ void WCSPH::update_all_density_and_pressure()
     {
         if(wall_ptcl->active == false)
             continue;
-        float fluid_density = 0;
+        double fluid_density = 0;
         auto ra = wall_ptcl->position;
         for(auto fluid_neigh: wall_ptcl->fluid_neighs)
         {
             auto rb = fluid_neigh->position;
             auto rab = ra - rb;
-            float rab_sqr = rab.norm() * rab.norm();
+            double rab_sqr = rab.norm() * rab.norm();
             fluid_density += kernel.poly6(rab_sqr);
         }
 
-        float wall_density = 0;
+        double wall_density = 0;
         for(auto wall_neigh: wall_ptcl->wall_neighs)
         {
             auto rb = wall_neigh->position;
             auto rab = ra - rb;
-            float rab_sqr = rab.norm() * rab.norm();
+            double rab_sqr = rab.norm() * rab.norm();
             wall_density += kernel.poly6(rab_sqr) * wall_neigh->mass;
         }
 
-        float density = kernel.poly6Constant * fluid_ptcl_mass * fluid_density;
+        double density = kernel.poly6Constant * fluid_ptcl_mass * fluid_density;
         density += kernel.poly6Constant * wall_density;
 
         auto B = rho0 * _C * _C / _GAMMA;
-        float token = density / rho0;
+        double token = density / rho0;
         auto pressure = B * (pow(token, _GAMMA) - 1.0);
         wall_ptcl->density = density;
         wall_ptcl->pressure = pressure;
@@ -231,27 +232,27 @@ void WCSPH::update_all_density_and_pressure()
 
     for(auto fluid_ptcl: _fluid_ptcl_list)
     {
-        float fluid_density = 0.f;
+        double fluid_density = 0.f;
         auto ra = fluid_ptcl->position;
         for(auto fluid_neigh: fluid_ptcl->fluid_neighs)
         {
             auto rb = fluid_neigh->position;
             auto rab = ra - rb;
-            float rab_sqr = rab.norm() * rab.norm();
+            double rab_sqr = rab.norm() * rab.norm();
             fluid_density += kernel.poly6(rab_sqr);
         }
-        float wall_density = 0;
+        double wall_density = 0;
 #if USE_WALL
         for(auto wall_neigh: fluid_ptcl->wall_neighs)
         {
             auto rb = wall_neigh->position;
             auto rab = ra - rb;
-            float rab_sqr = rab.norm() * rab.norm();
+            double rab_sqr = rab.norm() * rab.norm();
             wall_density += kernel.poly6(rab_sqr) * wall_neigh->mass;
         }
 #endif
 
-        float density = kernel.poly6Constant * fluid_ptcl_mass * fluid_density;
+        double density = kernel.poly6Constant * fluid_ptcl_mass * fluid_density;
         density += kernel.poly6Constant * wall_density;
         cout<<"=================================="<<endl;
         cout<<"kernel.poly6Constant"<<kernel.poly6Constant<<endl;
@@ -262,7 +263,7 @@ void WCSPH::update_all_density_and_pressure()
 
 
         auto B = rho0 * _C * _C / _GAMMA;
-        float token = density / rho0;
+        double token = density / rho0;
         auto pressure = B * (pow(token, _GAMMA) - 1.0);
         fluid_ptcl->density = density;
         fluid_ptcl->pressure = pressure;
@@ -279,14 +280,14 @@ void WCSPH::update_all_normal()
     for(auto fluid_ptcl: _fluid_ptcl_list)
     {
 //        cout<<"+++++++++++++++++++++++++++++"<<endl;
-        Vector3f normal(0, 0, 0);
+        Vector3d normal(0, 0, 0);
         auto ra = fluid_ptcl->position;
         for(auto fluid_neigh: fluid_ptcl->fluid_neighs)
         {
             auto rb = fluid_neigh->position;
             auto rho_b = fluid_neigh->density;
             auto rab = ra - rb;
-            float rab_sqr = rab.norm() * rab.norm();
+            double rab_sqr = rab.norm() * rab.norm();
             normal += kernel.poly6GradConstant * kernel.poly6Grad(rab, rab_sqr) / rho_b ;
 //            cout<<"kernel.poly6GradConstant:"<<kernel.poly6GradConstant<<endl;
 //            cout<<"kernel.poly6Grad(rab, rab_sqr):"<<kernel.poly6Grad(rab, rab_sqr)<<endl;
@@ -306,11 +307,11 @@ void WCSPH::update_net_force()
 {
     for(auto cur_fluid: _fluid_ptcl_list)
     {
-        Vector3f net_force(0,0,0);
-        Vector3f forcePressure(0,0,0);
-        Vector3f forceViscosity(0,0,0);
-        Vector3f forceCohesion(0,0,0);
-        Vector3f forceCurvature(0,0,0);
+        Vector3d net_force(0,0,0);
+        Vector3d forcePressure(0,0,0);
+        Vector3d forceViscosity(0,0,0);
+        Vector3d forceCohesion(0,0,0);
+        Vector3d forceCurvature(0,0,0);
 
         auto va = cur_fluid->velocity;
         auto ra = cur_fluid->position;
@@ -330,7 +331,7 @@ void WCSPH::update_net_force()
                 continue;
             auto rab = ra - rb;
             auto vab = va-vb;
-            float rab_sqr = rab.norm() * rab.norm();
+            double rab_sqr = rab.norm() * rab.norm();
             if(rab.norm() < kernel_radius && rab.norm() > 0.001f)
             {
                 //Momentum
@@ -341,7 +342,7 @@ void WCSPH::update_net_force()
                 //Viscosity
                 if(vab.dot(rab) < 0.0)
                 {
-                    float eps = 0.01f;
+                    double eps = 0.01f;
                     auto v = -2 * alpha * kernel_radius * _C / (rho_a + rho_b);
                     auto pi_ab = -v * vab.dot(rab) / (rab.dot(rab) + eps * kernel_radius * kernel_radius);
                     forceViscosity -= fluid_ptcl_mass *fluid_ptcl_mass * pi_ab * kernel.spikyConstant * kernel.spikyGrad(rab, rab.norm()); // minus?
@@ -349,14 +350,14 @@ void WCSPH::update_net_force()
 //                    forceViscosity -= (va - vb) * (kernel.viscosityLaplace(rab.norm()) / rho_b);
 
                 //surface tension
-                float correctionFactor = 2.f * rho0 / (rho_a + rho_b);
+                double correctionFactor = 2.f * rho0 / (rho_a + rho_b);
                 forceCohesion += correctionFactor * (rab / rab.norm()) * kernel.surfaceTension(rab.norm());
                 forceCurvature += correctionFactor * (na - nb);
             }
             else if (rab_sqr == 0.f)
             {
                     // Avoid collapsing particles
-                    fluid_neigh->position += Vector3f(1e-5f, 1e-5f, 1e-5f);
+                    fluid_neigh->position += Vector3d(1e-5f, 1e-5f, 1e-5f);
             }
 
 
@@ -401,7 +402,7 @@ void WCSPH::update_velocity_position()
 {
     for(auto cur_fluid: _fluid_ptcl_list)
     {
-        Vector3f dvdt = cur_fluid->netForce / fluid_ptcl_mass;
+        Vector3d dvdt = cur_fluid->netForce / fluid_ptcl_mass;
         cur_fluid->velocity += dvdt * dt;
         cur_fluid->position += cur_fluid->velocity * dt;
     }

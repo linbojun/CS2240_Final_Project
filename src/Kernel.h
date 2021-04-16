@@ -21,11 +21,11 @@ using namespace Eigen;
 // r2 = |r|^2 (squared norm of r)
 // rn = |r|   (norm of r)
 struct Kernel {
-    float h;
-    float h2;
-    float halfh;
+    double h;
+    double h2;
+    double halfh;
 
-    void init(float h_) {
+    void init(double h_) {
         h = h_;
         h2 = h*h;
         halfh = 0.5f * h;
@@ -41,44 +41,44 @@ struct Kernel {
         surfaceTensionOffset = -std::pow(h, 6.f) / 64.f;
     }
 
-    float poly6Constant;
-    inline float poly6(float r2) const {
+    double poly6Constant;
+    inline double poly6(double r2) const {
         return cube(h2 - r2);
     }
 
-    float poly6GradConstant;
-    inline Vector3f poly6Grad(const Vector3f &r, float r2) const {
+    double poly6GradConstant;
+    inline Vector3d poly6Grad(const Vector3d &r, double r2) const {
         return sqr(h2 - r2) * r;
     }
 
-    float poly6LaplaceConstant;
-    inline float poly6Laplace(float r2) {
+    double poly6LaplaceConstant;
+    inline double poly6Laplace(double r2) {
         return (h2 - r2) * (3.f * h2 - 7.f * r2);
     }
 
-    float spikyConstant;
-    inline float spiky(float rn) const {
+    double spikyConstant;
+    inline double spiky(double rn) const {
         return cube(h - rn);
     }
 
-    float spikyGradConstant;
-    inline Vector3f spikyGrad(const Vector3f &r, float rn) const {
+    double spikyGradConstant;
+    inline Vector3d spikyGrad(const Vector3d &r, double rn) const {
         return sqr(h - rn) * r * (1.f / rn);
     }
 
-    float spikyLaplaceConstant;
-    inline float spikyLaplace(float rn) const {
+    double spikyLaplaceConstant;
+    inline double spikyLaplace(double rn) const {
         return (h - rn) * (h - 2.f * rn) / rn;
     }
 
-    float viscosityLaplaceConstant;
-    inline float viscosityLaplace(float rn) const {
+    double viscosityLaplaceConstant;
+    inline double viscosityLaplace(double rn) const {
         return (h - rn);
     }
 
-    float surfaceTensionConstant;
-    float surfaceTensionOffset;
-    inline float surfaceTension(float rn) const {
+    double surfaceTensionConstant;
+    double surfaceTensionOffset;
+    inline double surfaceTension(double rn) const {
         if (rn < halfh) {
             return 2.f * cube(h - rn) * cube(rn) + surfaceTensionOffset;
         } else {

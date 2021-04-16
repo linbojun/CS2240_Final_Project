@@ -118,7 +118,7 @@ SPH::SPH(int n, float radius) :
         m_particle_list.push_back(new_particle);
         Vector3d zeros(0,0,0);
 //        updateParticlePos(i, Vector3d::Random() * 0.5 + Vector3d(0.5, 0.5, 0.5));
-        updateParticlePos(i, m_posInit.getPt(i).cast<double> ());
+        updateParticlePos(i, m_posInit.getPt(i).cast<double>());
         new_particle->velocity = m_posInit.getVel(i).cast<double>();
         new_particle->pressure = 0;
         new_particle->density = _rho0;
@@ -157,6 +157,7 @@ vector<shared_ptr<particle>> SPH::find_neighs(int pi)
 
 void SPH::update(float seconds)
 {
+    cout<<"seconds"<<seconds<<endl;
     for(unsigned int i = 0; i < m_particle_list.size(); i++)
     {
         shared_ptr<particle> cur = m_particle_list.at(i);
