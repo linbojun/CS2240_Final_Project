@@ -9,6 +9,8 @@
 #include <graphics/shape.h>
 #include "Kernel.h"
 #include "positioninit.h"
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 //using namespace Eigen;
 //using namespace std;
@@ -24,7 +26,7 @@ typedef struct wall_ptcl
     double mass;
     // std::vector<int> _boundaryActive;
     bool active;
-    std::vector<std::shared_ptr<fluid_ptcl>> fluid_neighs;
+    std::vector<int> fluid_neighs;
     std::vector<std::shared_ptr<wall_ptcl>> wall_neighs;
     
 } wall_ptcl;
@@ -43,13 +45,14 @@ typedef struct fluid_ptcl{
     double density;
     double pressure;
 //    double drhodt;
-    std::vector<std::shared_ptr<fluid_ptcl>> fluid_neighs;
+    std::vector<int> fluid_neighs;
     std::vector<std::shared_ptr<wall_ptcl>> wall_neighs;
+    bool shouldSim;
 }fluid_ptcl;
 
 
 #define _GAMMA 7.0
-#define _VISCOSITY 0.05f
+#define _VISCOSITY 0.01f
 #define _C 9.0f
 
 
@@ -60,17 +63,24 @@ public:
     void draw(Shader *shader);
     void update(double time_step);
 
-
-
+    int getNumParticle() { return _fluid_ptcl_list.size(); }
+    std::vector<std::shared_ptr<fluid_ptcl>> getParticles() { return _fluid_ptcl_list; }
 
 private:
     double fluid_ptcl_mass;
-    double dt = 0.0625;
+    double dt = 0.006;
     double ptcl_radius = 0.01;
-    double rho0 = 10000;
-    double surface_tension = 1;
-//    double alpha = 0.1;
-    double alpha = 1;
+    double rho0 = 1000;
+    double surface_tension = 3;
+    int _num_part_sim;
+    float simwait_secs = 3;
+    double t = 0;
+    double alpha = 0.2;
+//    double alpha = 1;
+    int _grid_segs;
+    float _voxel_len;
+    int _max_grid_search;
+    std::vector<std::vector<int>> m_grid;
 
 
     double kernel_factor = 3.0; //kernel_radius = kernel_factor * ptcl_radius
@@ -88,8 +98,8 @@ private:
 
 
     void update_all_neighs();
-    void find_fluid_neighs(std::shared_ptr<fluid_ptcl> cur);
-    void find_wall_neighs(std::shared_ptr<wall_ptcl> cur);
+    void find_fluid_neighs(int pi);
+    void find_wall_neighs(int pi);
 
     void update_all_density_and_pressure();
     void update_all_density_and_pressure_old();
@@ -100,6 +110,13 @@ private:
     void boundary_collision();
     void single_pressure(std::shared_ptr<fluid_ptcl> cur);
     void single_drhodt(std::shared_ptr<fluid_ptcl> cur);
+    Eigen::Vector3i gridPlace(const Eigen::Vector3d& pos);
+    void updateParticlePos(int i, Eigen::Vector3d newPos, bool initializing=false);
+
+    int gridPlaceIndex(const Eigen::Vector3i& place);
+
+    int gridIndex(Eigen::Vector3d& pos);
+
 
 
     Shape get_sphere_shape(float r, int res);

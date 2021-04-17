@@ -7,7 +7,8 @@
 #include <vector>
 #include <graphics/shape.h>
 #include "positioninit.h"
-
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 const float _rho0 = 1000;
 const float _dt = 0.0001;

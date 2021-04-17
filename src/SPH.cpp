@@ -90,9 +90,9 @@ Shape get_sphere_shape(float r, int res) {
 
 SPH::SPH(int n, float radius) :
     m_radius(radius),
-    m_posInit(radius*5)
+    m_posInit(radius*3)
 {
-    _neighbor_radius = m_radius * 2.f;
+    _neighbor_radius = m_radius * 3.f;
     _grid_segs = 1 / _neighbor_radius;
     _voxel_len = 1.f/_grid_segs;
     _max_grid_search = ceil(_neighbor_radius / _voxel_len);

@@ -2,6 +2,7 @@
 
 //#include "core/Common.h"
 //#include "core/Vector.h"
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <cmath>
 #include <Eigen/Dense>

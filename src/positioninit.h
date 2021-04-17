@@ -19,6 +19,8 @@ public:
 
     int getNumParticles();
 
+    void setRadius(float r);
+
 
 
 private:

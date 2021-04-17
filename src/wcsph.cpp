@@ -6,18 +6,60 @@
 using namespace Eigen;
 using namespace std;
 
+inline bool inBounds(const Vector3d& pos) {
+    return 1 >= pos[0] && pos[0] >= 0 && 1 >= pos[1] && pos[1] >= 0 && 1 >= pos[2] && pos[2] >= 0;
+}
+
+inline Vector3i WCSPH::gridPlace(const Vector3d& pos) {
+    return Vector3i(pos[0] * (_grid_segs - 1), pos[1] * (_grid_segs - 1), pos[2] * (_grid_segs - 1));
+}
+
+inline int WCSPH::gridPlaceIndex(const Vector3i& place) {
+    return place[0] * _grid_segs * _grid_segs + place[1] * _grid_segs + place[2];
+}
+
+inline int WCSPH::gridIndex(Vector3d& pos) {
+    return gridPlaceIndex(gridPlace(pos));
+}
+
+void WCSPH::updateParticlePos(int i, Vector3d newPos, bool initializing) {
+    auto particle = _fluid_ptcl_list[i];
+    if(!initializing) {
+        // delete from old spot in grid
+        if(inBounds(particle->position)) {
+            auto& vec = m_grid[gridIndex(particle->position)];
+            vec.erase(std::remove(vec.begin(), vec.end(), i), vec.end());
+        }
+    }
+    // add to new spot in grid
+    if(inBounds(newPos)) {
+        m_grid[gridIndex(newPos)].push_back(i);
+    }
+    particle->position = newPos;
+}
+
+
 #define USE_WALL 0
 WCSPH::WCSPH():
-    m_posInit(ptcl_radius*2.5)
+    m_posInit(ptcl_radius*2)
 {
+
     kernel_radius = kernel_factor * ptcl_radius;
     fluid_ptcl_mass = 4.0/3.0 * M_PI * ptcl_radius * ptcl_radius * ptcl_radius;
+
+    _grid_segs = 1 / kernel_radius;
+    _voxel_len = 1.f/_grid_segs;
+    _max_grid_search = ceil(kernel_radius / _voxel_len);
+    assert(_max_grid_search == 1);
+
+    m_grid.resize(_grid_segs * _grid_segs * _grid_segs);
     // bounds.reset();
 
-    int num_fluid_particle = 1000;
     kernel.init(kernel_radius);
-    m_posInit.addBox(Vector3f(0.5, 0.4, 0.5), 0.2, 0.2, 0.2);
-
+    m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 1, 0.6, 1);
+    int npBox = m_posInit.getNumParticles();
+    m_posInit.setRadius(ptcl_radius*1.9);
+    m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.08, Vector3f(0, 0, 0));
 
     //assume bound is x = 1,-1
 //    for(int i = 0; i < num_fluid_particle; i++)
@@ -45,10 +87,11 @@ WCSPH::WCSPH():
         Vector3d zeros(0,0,0);
 //        updateParticlePos(i, Vector3d::Random() * 0.5 + Vector3d(0.5, 0.5, 0.5));
         //updateParticlePos(i, m_posInit.getPt(i).cast<double> ());
-        new_particle->position = m_posInit.getPt(i).cast<double>();
-        new_particle->velocity = zeros;
+        updateParticlePos(i, m_posInit.getPt(i).cast<double>(), true);
+        new_particle->velocity = m_posInit.getVel(i).cast<double>();
         new_particle->pressure = 0;
         new_particle->density = rho0;
+        new_particle->shouldSim = i < npBox;
         //m_p_shapes.push_back(get_sphere_shape(adius));
     }
 
@@ -65,33 +108,46 @@ void WCSPH::update_all_neighs()
         wall_ptcl->active = false;
     }
 #endif
-    for(auto cur: _fluid_ptcl_list)
+    for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
-        find_fluid_neighs(cur);
+        //if(!_fluid_ptcl_list[i]->shouldSim)
+        //    continue;
+        find_fluid_neighs(i);
         //cout<<"num_neighs:"<<cur->fluid_neighs.size()<<endl;;
     }
 #if USE_WALL
-    for(auto cur: _wall_ptcl_list)
+    for(int i = 0; i < _wall_ptcl_list.size(); i++)
     {
-        find_wall_neighs(cur);
+        find_wall_neighs(i);
     }
 #endif
 }
 
-void WCSPH::find_fluid_neighs(shared_ptr<fluid_ptcl> cur)
+void WCSPH::find_fluid_neighs(int pi)
 {
+    shared_ptr<fluid_ptcl> &cur = _fluid_ptcl_list.at(pi);
     cur->fluid_neighs.clear();
-    cur->wall_neighs.clear();
-    auto ra = cur->position;
-    for(auto fluid_ptcl: _fluid_ptcl_list)
-    {
-        auto rb = fluid_ptcl->position;
-        auto rab = ra - rb;
-        if(rab.norm() < kernel_radius && rab.norm() > 0)
-        {
-            cur->fluid_neighs.push_back(fluid_ptcl);
+//    assert(inBounds(cur->position));
+    Vector3i place = gridPlace(cur->position);
+    for(int x = max(0, place[0] - _max_grid_search); x <= min(_grid_segs - 1, place[0] + _max_grid_search); x++) {
+        for(int y = max(0, place[1] - _max_grid_search); y <= min(_grid_segs - 1, place[1] + _max_grid_search); y++) {
+            for(int z = max(0, place[2] - _max_grid_search); z <= min(_grid_segs - 1, place[2] + _max_grid_search); z++) {
+                int idx = gridPlaceIndex(Vector3i(x, y, z));
+                for(int poss_neigh : m_grid[idx]) {
+                    if(poss_neigh == pi)
+                        continue;
+                    shared_ptr<fluid_ptcl>& ptcl_other = _fluid_ptcl_list.at(poss_neigh);
+                    auto dist = ptcl_other->position - cur->position;
+                    if(dist.norm() < kernel_radius) {
+                        cur->fluid_neighs.push_back(poss_neigh);
+                    }
+                }
+            }
         }
     }
+
+    cur->wall_neighs.clear();
+    auto ra = cur->position;
 
     for(auto wall_ptcl: _wall_ptcl_list)
     {
@@ -105,24 +161,33 @@ void WCSPH::find_fluid_neighs(shared_ptr<fluid_ptcl> cur)
     }
 }
 
-void WCSPH::find_wall_neighs(shared_ptr<wall_ptcl> cur)
+void WCSPH::find_wall_neighs(int pi)
 {
+    shared_ptr<wall_ptcl> &cur = _wall_ptcl_list.at(pi);
     if(!cur->active){
         return;
     }
     cur->wall_neighs.clear();
     cur->fluid_neighs.clear();
-    auto ra = cur->position;
-    for(auto fluid_ptcl: _fluid_ptcl_list)
-    {
-        auto rb = fluid_ptcl->position;
-        auto rab = ra - rb;
-        if(rab.norm() < kernel_radius)
-        {
-            cur->fluid_neighs.push_back(fluid_ptcl);
+//    assert(inBounds(cur->position));
+    Vector3i place = gridPlace(cur->position);
+    for(int x = max(0, place[0] - _max_grid_search); x <= min(_grid_segs - 1, place[0] + _max_grid_search); x++) {
+        for(int y = max(0, place[1] - _max_grid_search); y <= min(_grid_segs - 1, place[1] + _max_grid_search); y++) {
+            for(int z = max(0, place[2] - _max_grid_search); z <= min(_grid_segs - 1, place[2] + _max_grid_search); z++) {
+                int idx = gridPlaceIndex(Vector3i(x, y, z));
+                for(int poss_neigh : m_grid[idx]) {
+                    if(poss_neigh == pi)
+                        continue;
+                    shared_ptr<fluid_ptcl>& ptcl_other = _fluid_ptcl_list.at(poss_neigh);
+                    auto dist = ptcl_other->position - cur->position;
+                    if(dist.norm() < kernel_radius) {
+                        cur->fluid_neighs.push_back(poss_neigh);
+                    }
+                }
+            }
         }
     }
-
+    auto ra = cur->position;
     for(auto wall_ptcl: _wall_ptcl_list)
     {
         auto rb = wall_ptcl->position;
@@ -144,6 +209,15 @@ void WCSPH::update(double time_step)
     update_net_force();
     update_velocity_position();
     boundary_collision();
+    t += dt;
+    if(t > simwait_secs) {
+        for(auto cur : _fluid_ptcl_list) {
+            if(!cur->shouldSim) {
+                cur->shouldSim = true;
+                cur->velocity += Eigen::Vector3d(0, -1.5, 0);
+            }
+        }
+    }
 //    exit(0);
 
 }
@@ -153,6 +227,8 @@ void WCSPH::update_all_density_and_pressure_old()
     cout<<"update_all_density_and_pressure_old()"<<endl;
     for(auto cur: _fluid_ptcl_list)
     {
+        //if(!cur->shouldSim)
+        //    continue;
         single_drhodt(cur);
         single_pressure(cur);
     }
@@ -164,8 +240,9 @@ void WCSPH::single_drhodt(shared_ptr<fluid_ptcl> cur)
     auto ra = cur->position;
     auto va = cur->velocity;
     auto neighs = cur->fluid_neighs;
-    for(auto neigh: neighs)
+    for(auto i: neighs)
     {
+        auto neigh = _fluid_ptcl_list[i];
         auto rb = neigh->position;
         auto vb = neigh->velocity;
         auto vab = va - vb;
@@ -201,8 +278,9 @@ void WCSPH::update_all_density_and_pressure()
             continue;
         double fluid_density = 0;
         auto ra = wall_ptcl->position;
-        for(auto fluid_neigh: wall_ptcl->fluid_neighs)
+        for(auto i: wall_ptcl->fluid_neighs)
         {
+            auto fluid_neigh = _fluid_ptcl_list[i];
             auto rb = fluid_neigh->position;
             auto rab = ra - rb;
             double rab_sqr = rab.norm() * rab.norm();
@@ -232,10 +310,13 @@ void WCSPH::update_all_density_and_pressure()
 
     for(auto fluid_ptcl: _fluid_ptcl_list)
     {
+        //if(!fluid_ptcl->shouldSim)
+        //    continue;
         double fluid_density = 0.f;
         auto ra = fluid_ptcl->position;
-        for(auto fluid_neigh: fluid_ptcl->fluid_neighs)
+        for(auto i: fluid_ptcl->fluid_neighs)
         {
+            auto fluid_neigh = _fluid_ptcl_list[i];
             auto rb = fluid_neigh->position;
             auto rab = ra - rb;
             double rab_sqr = rab.norm() * rab.norm();
@@ -279,11 +360,14 @@ void WCSPH::update_all_normal()
 {
     for(auto fluid_ptcl: _fluid_ptcl_list)
     {
+        //if(!fluid_ptcl->shouldSim)
+        //   continue;
 //        cout<<"+++++++++++++++++++++++++++++"<<endl;
         Vector3d normal(0, 0, 0);
         auto ra = fluid_ptcl->position;
-        for(auto fluid_neigh: fluid_ptcl->fluid_neighs)
+        for(auto i: fluid_ptcl->fluid_neighs)
         {
+            auto fluid_neigh = _fluid_ptcl_list[i];
             auto rb = fluid_neigh->position;
             auto rho_b = fluid_neigh->density;
             auto rab = ra - rb;
@@ -307,6 +391,8 @@ void WCSPH::update_net_force()
 {
     for(auto cur_fluid: _fluid_ptcl_list)
     {
+        //if(!cur_fluid->shouldSim)
+        //    continue;
         Vector3d net_force(0,0,0);
         Vector3d forcePressure(0,0,0);
         Vector3d forceViscosity(0,0,0);
@@ -320,8 +406,9 @@ void WCSPH::update_net_force()
         auto pa = cur_fluid->pressure;
 
         //force by the fluid particle
-        for(auto fluid_neigh: cur_fluid->fluid_neighs)
+        for(auto i: cur_fluid->fluid_neighs)
         {
+            auto fluid_neigh = _fluid_ptcl_list[i];
             auto vb = fluid_neigh->velocity;
             auto rb = fluid_neigh->position;
             auto nb = fluid_neigh->normal;
@@ -357,7 +444,7 @@ void WCSPH::update_net_force()
             else if (rab_sqr == 0.f)
             {
                     // Avoid collapsing particles
-                    fluid_neigh->position += Vector3d(1e-5f, 1e-5f, 1e-5f);
+                    updateParticlePos(i, fluid_neigh->position + Vector3d(1e-5f, 1e-5f, 1e-5f));
             }
 
 
@@ -392,7 +479,8 @@ void WCSPH::update_net_force()
 //        cout<<"forceViscosity:"<<forceViscosity<<endl;
 //        cout<<"forceCohesion:"<<forceCohesion<<endl;
 //        cout<<"forceCurvature:"<<forceCurvature<<endl;
-        //force += fluid_ptcl_mass * _gravity;
+        if(cur_fluid->shouldSim)
+            net_force += fluid_ptcl_mass * Vector3d(0, -0.1, 0); // gravity
         cur_fluid->netForce = net_force;
     }
 
@@ -400,41 +488,48 @@ void WCSPH::update_net_force()
 
 void WCSPH::update_velocity_position()
 {
-    for(auto cur_fluid: _fluid_ptcl_list)
+    for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
+        auto cur_fluid = _fluid_ptcl_list[i];
+        //if(!cur_fluid->shouldSim)
+        //    continue;
         Vector3d dvdt = cur_fluid->netForce / fluid_ptcl_mass;
         cur_fluid->velocity += dvdt * dt;
-        cur_fluid->position += cur_fluid->velocity * dt;
+        updateParticlePos(i, cur_fluid->position + cur_fluid->velocity * dt);
     }
 }
 
 void WCSPH::boundary_collision()
 {
-    for(auto cur_fluid: _fluid_ptcl_list)
+    for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
+        auto cur_fluid = _fluid_ptcl_list[i];
+        //if(!cur_fluid->shouldSim)
+        //    continue;
         auto r = cur_fluid->position;
         auto v = cur_fluid->velocity;
-        auto k = 0.3;
+        auto k = 0.4;
         for (int i = 0; i < 3; i++)
         {
             if (r(i,0) < 0)
             {
-                cur_fluid->position(i,0) = 0;
+                r(i,0) = 0;
                 if (v(i,0) < 0.0) {
 
 //                    cur_fluid->velocity(i,0) += -(1 + k) * v(i,0);
-                     cur_fluid->velocity(i,0)  = 0;
+                     cur_fluid->velocity(i,0)  = -k*cur_fluid->velocity(i,0);
                 }
             }
             if (r(i,0) > 1)
             {
-                cur_fluid->position(i,0) = 1;
+                r(i,0) = 1;
                 if (v(i,0) > 0.0) {
 //                    cur_fluid->velocity(i,0) += -(1 + k) * v(i,0);
-                    cur_fluid->velocity(i,0) = 0;
+                    cur_fluid->velocity(i,0) = -k*cur_fluid->velocity(i, 0);
                 }
             }
         }
+        updateParticlePos(i, r);
     }
 
 }
