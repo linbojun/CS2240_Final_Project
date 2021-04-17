@@ -8,7 +8,7 @@ using namespace std;
 
 #define USE_WALL 0
 WCSPH::WCSPH():
-    m_posInit(ptcl_radius*2.5)
+    m_posInit(ptcl_radius*2)
 {
     kernel_radius = kernel_factor * ptcl_radius;
     fluid_ptcl_mass = 4.0/3.0 * M_PI * ptcl_radius * ptcl_radius * ptcl_radius;
@@ -343,9 +343,10 @@ void WCSPH::update_net_force()
                 if(vab.dot(rab) < 0.0)
                 {
                     double eps = 0.01f;
-                    auto v = -2 * alpha * kernel_radius * _C / (rho_a + rho_b);
+                    auto v = 2 * alpha * kernel_radius * _C / (rho_a + rho_b);
                     auto pi_ab = -v * vab.dot(rab) / (rab.dot(rab) + eps * kernel_radius * kernel_radius);
-                    forceViscosity -= fluid_ptcl_mass *fluid_ptcl_mass * pi_ab * kernel.spikyConstant * kernel.spikyGrad(rab, rab.norm()); // minus?
+                    forceViscosity -= fluid_ptcl_mass *fluid_ptcl_mass * pi_ab * kernel.spikyGradConstant * kernel.spikyGrad(rab, rab.norm()); // minus?
+                    //dvdt += mass * pi_ab * gradW(rab, dh);
                 }
 //                    forceViscosity -= (va - vb) * (kernel.viscosityLaplace(rab.norm()) / rho_b);
 
@@ -379,7 +380,7 @@ void WCSPH::update_net_force()
         }
 #endif
 
-        forceViscosity *= _VISCOSITY * fluid_ptcl_mass * kernel.viscosityLaplaceConstant;
+//        forceViscosity *= _VISCOSITY * fluid_ptcl_mass * kernel.viscosityLaplaceConstant;
 
         forceCohesion *= -surface_tension * fluid_ptcl_mass * fluid_ptcl_mass * kernel.surfaceTensionConstant;
         forceCurvature *= -surface_tension * fluid_ptcl_mass;

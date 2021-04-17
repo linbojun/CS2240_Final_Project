@@ -66,14 +66,15 @@ public:
 private:
     double fluid_ptcl_mass;
     double dt = 0.0625;
+    //double dt = 0.00625;
     double ptcl_radius = 0.01;
     double rho0 = 10000;
-    double surface_tension = 1;
-//    double alpha = 0.1;
-    double alpha = 1;
+    double surface_tension = 2.0;
+    double alpha = 0.5;
+//    double alpha = 1;
 
 
-    double kernel_factor = 3.0; //kernel_radius = kernel_factor * ptcl_radius
+    double kernel_factor = 15.0; //kernel_radius = kernel_factor * ptcl_radius
     double kernel_radius; //h, smoothing length
     double compression_threshold;
 
