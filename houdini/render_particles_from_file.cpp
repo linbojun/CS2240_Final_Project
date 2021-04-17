@@ -104,7 +104,7 @@ sopCreateBall(GU_Detail *to, float x, float y, float z)
     }
     if(true) {
         GU_PrimMetaBallParms ball(to);
-        ball.weight = 200;
+        ball.weight = 2;
         // Position and scale the collision sphere to account for the
         // deformation animation.
         ball.xform.scale(0.005, 0.005, 0.005);

@@ -69,9 +69,9 @@ public:
 private:
     double fluid_ptcl_mass;
     double dt = 0.006;
-    double ptcl_radius = 0.01;
+    double ptcl_radius = 0.02;
     double rho0 = 1000;
-    double surface_tension = 3;
+    double surface_tension = 1;
     int _num_part_sim;
     float simwait_secs = 3;
     double t = 0;
@@ -81,6 +81,7 @@ private:
     float _voxel_len;
     int _max_grid_search;
     std::vector<std::vector<int>> m_grid;
+
 
 
     double kernel_factor = 3.0; //kernel_radius = kernel_factor * ptcl_radius

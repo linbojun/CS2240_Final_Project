@@ -41,7 +41,7 @@ void WCSPH::updateParticlePos(int i, Vector3d newPos, bool initializing) {
 
 #define USE_WALL 0
 WCSPH::WCSPH():
-    m_posInit(ptcl_radius*2)
+    m_posInit(ptcl_radius*1.8)
 {
 
     kernel_radius = kernel_factor * ptcl_radius;
@@ -58,7 +58,7 @@ WCSPH::WCSPH():
     kernel.init(kernel_radius);
     m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 1, 0.6, 1);
     int npBox = m_posInit.getNumParticles();
-    m_posInit.setRadius(ptcl_radius*1.9);
+    m_posInit.setRadius(ptcl_radius*1.5);
     m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.08, Vector3f(0, 0, 0));
 
     //assume bound is x = 1,-1
@@ -430,9 +430,10 @@ void WCSPH::update_net_force()
                 if(vab.dot(rab) < 0.0)
                 {
                     double eps = 0.01f;
-                    auto v = -2 * alpha * kernel_radius * _C / (rho_a + rho_b);
+                    auto v = 2 * alpha * kernel_radius * _C / (rho_a + rho_b);
                     auto pi_ab = -v * vab.dot(rab) / (rab.dot(rab) + eps * kernel_radius * kernel_radius);
-                    forceViscosity -= fluid_ptcl_mass *fluid_ptcl_mass * pi_ab * kernel.spikyConstant * kernel.spikyGrad(rab, rab.norm()); // minus?
+                    forceViscosity -= fluid_ptcl_mass *fluid_ptcl_mass * pi_ab * kernel.spikyGradConstant * kernel.spikyGrad(rab, rab.norm()); // minus?
+                    //dvdt += mass * pi_ab * gradW(rab, dh);
                 }
 //                    forceViscosity -= (va - vb) * (kernel.viscosityLaplace(rab.norm()) / rho_b);
 
@@ -466,7 +467,7 @@ void WCSPH::update_net_force()
         }
 #endif
 
-        forceViscosity *= _VISCOSITY * fluid_ptcl_mass * kernel.viscosityLaplaceConstant;
+//        forceViscosity *= _VISCOSITY * fluid_ptcl_mass * kernel.viscosityLaplaceConstant;
 
         forceCohesion *= -surface_tension * fluid_ptcl_mass * fluid_ptcl_mass * kernel.surfaceTensionConstant;
         forceCurvature *= -surface_tension * fluid_ptcl_mass;
