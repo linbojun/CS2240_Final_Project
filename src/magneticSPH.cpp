@@ -8,16 +8,15 @@ using namespace std;
 using namespace Eigen;
 
 MagneticSPH::MagneticSPH(int n, float radius, double h):
-    SPH(n, radius), m_h(h), m_subupdate(5)
+    SPH(n, radius), m_h(h), m_subupdate(5), m_Binit()
 {
 
     m_Bext = VectorXd(3 * this->getNumParticle());
-    MagneticInit Binit;
-    Binit.addConstField(Vector3d(0.0, 2e-4, 0.0));
-//    Binit.addConstField(Vector3d(0.0, 0.0, 0.0));
+//    Binit.addConstField(Vector3d(0.0, 2e-4, 0.0));
+    m_Binit.addPointSource(Vector3d(0.0, 0.0, 0.3), Vector3d(0.0, 100, 0.0));
 
     for (int particle = 0; particle < getNumParticle(); ++particle){
-        Vector3d bExt = Binit.getMagneticField(getPos(particle));
+        Vector3d bExt = m_Binit.getMagneticField(getPos(particle));
         for (int i : {0, 1, 2}){
             m_Bext(3 * particle + i) = bExt(i);
         }
@@ -90,7 +89,7 @@ void MagneticSPH::update(float seconds)
 
 void MagneticSPH::buildProblem(MatrixXd& mat){
     double Gamma = getGamma();
-    cout << "getGamme" << endl;
+    cout << "getGamma" << endl;
     // room for paralellization
     cout << "num:" << getNumParticle() << endl;
     for (int particle = 0; particle <  getNumParticle(); ++particle) {
@@ -139,9 +138,10 @@ VectorXd MagneticSPH::calculateMagneticForce(VectorXd &F) {
 //    cout << "insytantiate matrix" << endl;
     buildProblem(mat);
 //     cout << "build Problem" << endl;
-    VectorXd m = getGamma() * calculateMagneticField(mat);
+    VectorXd b = calculateMagneticField(mat);
+    VectorXd m = getGamma() * b;
     for (int i = 0; i < getNumParticle(); ++i){
-        cout << "m: (" << m(3*i) << ", " << m(3*i+1) << ", " << m(3*i +2) << ")" << endl;
+//        cout << "b: (" << b(3*i) << ", " << b(3*i+1) << ", " << b(3*i +2) << ")" << endl;
     }
 //     cout << "build m" << endl;
     double mu_0 = getPermeability();
@@ -172,6 +172,17 @@ VectorXd MagneticSPH::calculateMagneticForce(VectorXd &F) {
         F(3*target) = targetForce(0);
         F(3*target+1) = targetForce(1);
         F(3*target+2) = targetForce(2);
+    }
+
+    //External Force
+    for (int target = 0; target < getNumParticle(); ++target) {
+        Vector3d m_target(m(3 * target), m(3 * target + 1), m(3 * target+ 2));
+        Vector3d externalForce = mu_0 * m_Binit.getMagneticFieldGrad(getPos(target)) * m_target;
+
+        cout << "f:" << externalForce(0) << "," << externalForce(1) << "," << externalForce(2) << endl;
+        F(3*target) += externalForce(0);
+        F(3*target+1) += externalForce(1);
+        F(3*target+2) += externalForce(2);
     }
 
 
