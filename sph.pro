@@ -3,7 +3,8 @@ QT += core gui opengl widgets
 TARGET = simulation
 TEMPLATE = app
 
-QMAKE_CXXFLAGS += -mstackrealign
+QMAKE_CXXFLAGS += -mstackrealign -openmp
+QMAKE_LFLAGS += -openmp
 CONFIG += c++17
 
 #CONFIG += sanitizer sanitize_address

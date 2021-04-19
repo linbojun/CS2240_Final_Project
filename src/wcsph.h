@@ -70,10 +70,10 @@ private:
     double fluid_ptcl_mass;
     double dt = 0.006;
     double ptcl_radius = 0.02;
-    double rho0 = 1000;
+    double rho0 = 300;
     double surface_tension = 1;
     int _num_part_sim;
-    float simwait_secs = 3;
+    float simwait_secs = 10;
     double t = 0;
     double alpha = 0.2;
 //    double alpha = 1;

@@ -1,7 +1,10 @@
 #include "wcsph.h"
 #include <math.h>
 #include <iostream>
-
+#include <mutex>
+#ifndef _OPENMP
+static_assert (0, "no openmp");
+#endif
 
 using namespace Eigen;
 using namespace std;
@@ -41,7 +44,7 @@ void WCSPH::updateParticlePos(int i, Vector3d newPos, bool initializing) {
 
 #define USE_WALL 0
 WCSPH::WCSPH():
-    m_posInit(ptcl_radius*1.8)
+    m_posInit(ptcl_radius*1.4)
 {
 
     kernel_radius = kernel_factor * ptcl_radius;
@@ -58,7 +61,7 @@ WCSPH::WCSPH():
     kernel.init(kernel_radius);
     m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 1, 0.6, 1);
     int npBox = m_posInit.getNumParticles();
-    m_posInit.setRadius(ptcl_radius*1.5);
+    m_posInit.setRadius(ptcl_radius*1.2);
     m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.08, Vector3f(0, 0, 0));
 
     //assume bound is x = 1,-1
@@ -108,6 +111,7 @@ void WCSPH::update_all_neighs()
         wall_ptcl->active = false;
     }
 #endif
+    #pragma omp parallel for
     for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
         //if(!_fluid_ptcl_list[i]->shouldSim)
@@ -225,8 +229,10 @@ void WCSPH::update(double time_step)
 void WCSPH::update_all_density_and_pressure_old()
 {
     cout<<"update_all_density_and_pressure_old()"<<endl;
-    for(auto cur: _fluid_ptcl_list)
+    #pragma omp parallel for
+    for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
+        auto cur = _fluid_ptcl_list[i];
         //if(!cur->shouldSim)
         //    continue;
         single_drhodt(cur);
@@ -307,9 +313,10 @@ void WCSPH::update_all_density_and_pressure()
 
     }
 #endif
-
-    for(auto fluid_ptcl: _fluid_ptcl_list)
+#pragma omp parallel for
+    for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
+        auto fluid_ptcl = _fluid_ptcl_list[i];
         //if(!fluid_ptcl->shouldSim)
         //    continue;
         double fluid_density = 0.f;
@@ -358,8 +365,10 @@ void WCSPH::update_all_density_and_pressure()
 
 void WCSPH::update_all_normal()
 {
-    for(auto fluid_ptcl: _fluid_ptcl_list)
+    #pragma omp parallel for
+    for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
+        auto fluid_ptcl = _fluid_ptcl_list[i];
         //if(!fluid_ptcl->shouldSim)
         //   continue;
 //        cout<<"+++++++++++++++++++++++++++++"<<endl;
@@ -389,8 +398,12 @@ void WCSPH::update_all_normal()
 
 void WCSPH::update_net_force()
 {
-    for(auto cur_fluid: _fluid_ptcl_list)
+    std::mutex mutex;
+    std::vector<int> overlaps;
+    #pragma omp parallel for
+    for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
+        auto cur_fluid = _fluid_ptcl_list[i];
         //if(!cur_fluid->shouldSim)
         //    continue;
         Vector3d net_force(0,0,0);
@@ -445,7 +458,10 @@ void WCSPH::update_net_force()
             else if (rab_sqr == 0.f)
             {
                     // Avoid collapsing particles
-                    updateParticlePos(i, fluid_neigh->position + Vector3d(1e-5f, 1e-5f, 1e-5f));
+                    mutex.lock();
+                    overlaps.push_back(i);
+                    //updateParticlePos(i, fluid_neigh->position + Vector3d(1e-5f, 1e-5f, 1e-5f));
+                    mutex.unlock();
             }
 
 
@@ -484,11 +500,15 @@ void WCSPH::update_net_force()
             net_force += fluid_ptcl_mass * Vector3d(0, -0.1, 0); // gravity
         cur_fluid->netForce = net_force;
     }
+    for(int i : overlaps) {
+        updateParticlePos(i, _fluid_ptcl_list[i]->position + Vector3d::Random()*1e-5f);
+    }
 
 }
 
 void WCSPH::update_velocity_position()
 {
+    //#pragma omp parallel for
     for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
         auto cur_fluid = _fluid_ptcl_list[i];
@@ -502,6 +522,7 @@ void WCSPH::update_velocity_position()
 
 void WCSPH::boundary_collision()
 {
+    //#pragma omp parallel for
     for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
         auto cur_fluid = _fluid_ptcl_list[i];

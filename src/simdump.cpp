@@ -30,7 +30,7 @@ void dump_full_sim(std::string outfile, int nparticles, float radius, int nframe
     out.open(outfile);
     //SPH sim(nparticles, radius);
     WCSPH sim;
-    int init_skip = (3.f / 0.06);
+    int init_skip = (10.f / 0.006);
     nparticles = sim.getNumParticle(); // original was a lie
     std::cout << "N particles: " << nparticles << "\n";
     out << nparticles << "\n";
