@@ -21,6 +21,10 @@ int PositionInit::getNumParticles(){
     return m_pts.size();
 }
 
+void PositionInit::setRadius(float r) {
+    m_dx = r;
+}
+
 void PositionInit::addSphere(Eigen::Vector3f center, float radius, Eigen::Vector3f vel){
     int boxSz = (int) ceil(radius / m_dx);
 

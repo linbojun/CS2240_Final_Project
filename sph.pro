@@ -3,7 +3,8 @@ QT += core gui opengl widgets
 TARGET = simulation
 TEMPLATE = app
 
-QMAKE_CXXFLAGS += -mstackrealign
+QMAKE_CXXFLAGS += -mstackrealign -openmp
+QMAKE_LFLAGS += -openmp
 CONFIG += c++17
 
 #CONFIG += sanitizer sanitize_address
@@ -34,6 +35,7 @@ SOURCES += \
     src/simulation.cpp \
     src/view.cpp \
     src/viewformat.cpp \
+    src/wcsph.cpp
 
 
 HEADERS += \
@@ -52,7 +54,9 @@ HEADERS += \
     src/view.h \
     src/viewformat.h \
     ui_mainwindow.h \
-    src/graphics/MeshLoader.h
+    src/graphics/MeshLoader.h \
+    src/Kernel.h \
+    src/wcsph.h
 
 FORMS += src/mainwindow.ui
 

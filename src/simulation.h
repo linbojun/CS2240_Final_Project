@@ -4,7 +4,8 @@
 #include "graphics/shape.h"
 #include "magneticSPH.h"
 #include <memory>
-
+#include "Kernel.h"
+#include "wcsph.h"
 class Shader;
 
 class Simulation
@@ -20,8 +21,7 @@ public:
 
 
 private:
-//    std::shared_ptr<SPH> m_sph;
-    std::shared_ptr<MagneticSPH> m_sph;
+    std::shared_ptr<WCSPH> m_sph;
     Shape m_ground;
     float m_timestep;
 };

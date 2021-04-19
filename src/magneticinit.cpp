@@ -1,5 +1,7 @@
 #include "magneticinit.h"
+#define _USE_MATH_DEFINES
 #include <math.h>
+
 
 using namespace Eigen;
 using namespace std;
