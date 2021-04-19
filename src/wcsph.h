@@ -59,19 +59,21 @@ typedef struct fluid_ptcl{
 class WCSPH{
 
 public:
-    WCSPH();
-    void draw(Shader *shader);
-    void update(double time_step);
+    WCSPH(double radius, double spacing);
+    virtual void draw(Shader *shader);
+    virtual void update(double time_step);
 
     int getNumParticle() { return _fluid_ptcl_list.size(); }
-    std::vector<std::shared_ptr<fluid_ptcl>> getParticles() { return _fluid_ptcl_list; }
+    const std::vector<std::shared_ptr<fluid_ptcl>> &getParticles() { return _fluid_ptcl_list; }
 
-private:
+    Eigen::Vector3d getPos(int particle) { return _fluid_ptcl_list[particle]->position; }
+    double getVolume() const { return pow(kernel_radius, 3.0); }
+protected:
     double fluid_ptcl_mass;
-    double dt = 0.006;
-    double ptcl_radius = 0.02;
+    double dt = 0.003;
+    double ptcl_radius;
     double rho0 = 300;
-    double surface_tension = 1;
+    double surface_tension = 5;
     int _num_part_sim;
     float simwait_secs = 10;
     double t = 0;
@@ -90,10 +92,8 @@ private:
 
     PositionInit m_posInit;
     Kernel kernel;
-
     std::vector<std::shared_ptr<wall_ptcl>> _wall_ptcl_list;
     std::vector<std::shared_ptr<fluid_ptcl>> _fluid_ptcl_list;
-
 
     // Box3d bounds;
 
@@ -107,7 +107,7 @@ private:
 
     void update_all_normal();
     void update_net_force();
-    void update_velocity_position();
+    virtual void update_velocity_position();
     void boundary_collision();
     void single_pressure(std::shared_ptr<fluid_ptcl> cur);
     void single_drhodt(std::shared_ptr<fluid_ptcl> cur);

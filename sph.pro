@@ -28,9 +28,11 @@ SOURCES += \
     src/graphics/MeshLoader.cpp \
     src/magneticSPH.cpp \
     src/magneticinit.cpp \
+    src/magneticwcsph.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
     src/positioninit.cpp \
+    src/shapes.cpp \
     src/simdump.cpp \
     src/simulation.cpp \
     src/view.cpp \
@@ -46,9 +48,11 @@ HEADERS += \
     src/graphics/shape.h \
     src/graphics/camera.h \
     src/magneticinit.h \
+    src/magneticwcsph.h \
     src/mainwindow.h \
     src/magneticSPH.h \
     src/positioninit.h \
+    src/shapes.h \
     src/simdump.h \
     src/simulation.h \
     src/view.h \

@@ -1,6 +1,6 @@
-
-#ifndef MAGNETICSPH_H
-#define MAGNETICSPH_H
+#ifndef MAGNETICWCSPH_H
+#define MAGNETICWCSPH_H
+#include "wcsph.h"
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
 #include "Eigen/SparseQR"
@@ -10,16 +10,20 @@
 #include <cmath>
 #include <math.h>
 
-class MagneticSPH : public SPH
+
+
+//const float _chi = 0.1f;
+
+class MagneticWCSPH : public WCSPH
 {
 
 public:
-    
-    MagneticSPH(int n, float radius, double h);
-    void update(float time_step) override;
+
+    MagneticWCSPH(int n, float radius, double h);
     void draw(Shader *shader) override;
 
 private:
+    void update_velocity_position() override;
     int m_t = 0;
     int m_subupdate = 1;
 
@@ -36,7 +40,7 @@ private:
 
     double w (const double q) const;
     double w_avr (const double q) const;
-    
+
     double W (const double q) const;
     double W_avr (const double q) const;
 
@@ -61,8 +65,8 @@ private:
     Eigen::VectorXd calculateMagneticForce(Eigen::VectorXd &F);
 
     void buildProblem(Eigen::MatrixXd &mat);
-    
-    
+
+
     float getG (const SPH &particles, int i, int j, int k, int l);
 
     double getMagneticSusceptibility() const;
@@ -71,5 +75,4 @@ private:
     double getGamma() const;
 
 };
-
-#endif
+#endif // MAGNETICWCSPH_H

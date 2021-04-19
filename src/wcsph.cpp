@@ -2,6 +2,7 @@
 #include <math.h>
 #include <iostream>
 #include <mutex>
+#include "shapes.h"
 #ifndef _OPENMP
 static_assert (0, "no openmp");
 #endif
@@ -43,8 +44,9 @@ void WCSPH::updateParticlePos(int i, Vector3d newPos, bool initializing) {
 
 
 #define USE_WALL 0
-WCSPH::WCSPH():
-    m_posInit(ptcl_radius*1.4)
+WCSPH::WCSPH(double radius, double spacing):
+    ptcl_radius(radius),
+    m_posInit(ptcl_radius*spacing)
 {
 
     kernel_radius = kernel_factor * ptcl_radius;
@@ -59,10 +61,10 @@ WCSPH::WCSPH():
     // bounds.reset();
 
     kernel.init(kernel_radius);
-    m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 1, 0.6, 1);
+    m_posInit.addBox(Vector3f(0.5, 0.1, 0.5), 0.2, 0.2, 0.2);
     int npBox = m_posInit.getNumParticles();
-    m_posInit.setRadius(ptcl_radius*1.2);
-    m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.08, Vector3f(0, 0, 0));
+    //m_posInit.setRadius(ptcl_radius*1.2);
+    //m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.08, Vector3f(0, 0, 0));
 
     //assume bound is x = 1,-1
 //    for(int i = 0; i < num_fluid_particle; i++)
@@ -530,7 +532,7 @@ void WCSPH::boundary_collision()
         //    continue;
         auto r = cur_fluid->position;
         auto v = cur_fluid->velocity;
-        auto k = 0.4;
+        auto k = 0;
         for (int i = 0; i < 3; i++)
         {
             if (r(i,0) < 0)

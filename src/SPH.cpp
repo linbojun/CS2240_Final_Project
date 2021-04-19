@@ -2,6 +2,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <graphics/Shader.h>
+#include "shapes.h"
 #include <iostream>
 #include <Eigen/Dense>
 
@@ -53,39 +54,6 @@ inline int SPH::gridPlaceIndex(const Vector3i& place) {
 
 inline int SPH::gridIndex(Vector3d& pos) {
     return gridPlaceIndex(gridPlace(pos));
-}
-
-
-Shape get_sphere_shape(float r, int res) {
-    std::vector<Vector3f> points;
-    std::vector<Vector3i> faces;
-    for(int thetas = 0; thetas < res; thetas++) {
-        for(int phis = 1; phis < res-1; phis++) {
-            float x = r * sin(phis*M_PI/res)*cos(thetas*2*M_PI/res);
-            float y = r * sin(phis*M_PI/res)*sin(thetas*2*M_PI/res);
-            float z = r * cos(phis*M_PI/res);
-            points.push_back(Vector3f(x, y, z));
-        }
-    }
-    // idx = thetas*18 + phis - 1
-    for(int thetas = 1; thetas < res+1; thetas++) {
-        for(int phis = 2; phis < res; phis++) {
-            faces.push_back(Vector3i((thetas%res)*(res-2) + phis - 1, (thetas-1)*(res-2) + phis - 1, (thetas-1)*(res-2) + phis - 2));
-            faces.push_back(Vector3i((thetas%res)*(res-2) + phis - 1, (thetas-1)*(res-2) + phis - 2, (thetas%res)*(res-2) + phis - 2));
-        }
-    }
-    int topi = points.size();
-    points.push_back(Vector3f(0, 0, r));
-    int boti = points.size();
-    points.push_back(Vector3f(0, 0, -r));
-    for(int thetas = 0; thetas < res; thetas++) {
-        faces.push_back(Vector3i(topi, thetas*(res-2), ((thetas+1)%res)*(res-2)));
-        faces.push_back(Vector3i(boti, thetas*(res-2) + (res-3), ((thetas+1)%res)*(res-2) + (res-3)));
-    }
-    Shape shape;
-    shape.init(points, faces, true);
-    shape.setVertices(points);
-    return shape;
 }
 
 SPH::SPH(int n, float radius) :

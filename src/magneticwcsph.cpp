@@ -1,4 +1,4 @@
-#include "magneticSPH.h"
+#include "magneticwcsph.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <iostream>
@@ -10,13 +10,14 @@ using namespace Eigen;
 const float _chi = 3.f;
 const float _mu_0 = 4 * M_PI * 1e-7;
 
-MagneticSPH::MagneticSPH(int n, float radius, double h):
-    SPH(n, radius), m_h(h), m_subupdate(5), m_Binit()
+// TODO: n, radius are fully ignored
+MagneticWCSPH::MagneticWCSPH(int n, float radius, double h):
+    WCSPH(radius, 4), m_h(h), m_subupdate(5), m_Binit()
 {
 
     m_Bext = VectorXd(3 * this->getNumParticle());
 //    Binit.addConstField(Vector3d(0.0, 2e-4, 0.0));
-    m_Binit.addPointSource(Vector3d(0.0, 0.0, 0.3), Vector3d(0.0, 100, 0.0));
+    m_Binit.addPointSource(Vector3d(2, 0, 2), Vector3d(0.0, 2, 0.0));
 
     for (int particle = 0; particle < getNumParticle(); ++particle){
         Vector3d bExt = m_Binit.getMagneticField(getPos(particle));
@@ -31,53 +32,27 @@ MagneticSPH::MagneticSPH(int n, float radius, double h):
 
 }
 
-void MagneticSPH::update(float seconds)
+void MagneticWCSPH::update_velocity_position()
 {
-
-    cout << "time:" << seconds << endl;
-
     if (m_t % m_subupdate == 0){
         cout << "update Magnet" << endl;
         calculateMagneticForce(m_magneticForce);
     }
-
-    for(unsigned int i = 0; i < m_particle_list.size(); i++)
+    //#pragma omp parallel for
+    for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
-        shared_ptr<particle> cur = m_particle_list.at(i);
-        cur->neighs  = find_neighs(i);
-        cur->drhodt = single_drhodt(cur);
-        cur->dvdt = total_dvdt(cur) + Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2))/cur->mass;
-
+        auto cur_fluid = _fluid_ptcl_list[i];
+        //if(!cur_fluid->shouldSim)
+        //    continue;
+        Vector3d totalForce = cur_fluid->netForce + Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2));
+        Vector3d dvdt = totalForce / fluid_ptcl_mass;
+        cur_fluid->velocity += dvdt * dt;
+        updateParticlePos(i, cur_fluid->position + cur_fluid->velocity * dt);
     }
-    for(unsigned int i = 0; i < m_particle_list.size(); i++)
-    {
-        shared_ptr<particle> cur = m_particle_list.at(i);
-
-        cur->velocity += 0.5 * seconds * cur->dvdt;
-        updateParticlePos(i, cur->position + 0.5 * seconds * cur->velocity);
-        cur->density += seconds * cur->drhodt;
-        cur->pressure = single_pressure(cur);
-        updateParticlePos(i, cur->position + 0.5 * seconds * cur->velocity);
-    }
-    for(unsigned int i = 0; i < m_particle_list.size(); i++)
-    {
-        shared_ptr<particle> cur = m_particle_list.at(i);
-        cur->neighs  = find_neighs(i);
-        cur->dvdt = total_dvdt(cur) + Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2))/cur->mass;
-    }
-    for(unsigned int i = 0; i < m_particle_list.size(); i++)
-    {
-        shared_ptr<particle> cur = m_particle_list.at(i);
-        cur->velocity += 0.5 * seconds * cur->dvdt;
-    }
-    boundry_collision();
-
-    ++m_t;
-
-
+    m_t++;
 }
 
- VectorXd MagneticSPH::calculateMagneticField(const MatrixXd& A){
+ VectorXd MagneticWCSPH::calculateMagneticField(const MatrixXd& A){
      VectorXd h_ext = getExternalB();
      m_cg.compute(A);
      if (m_isFirst){
@@ -90,14 +65,14 @@ void MagneticSPH::update(float seconds)
  }
 
 
-void MagneticSPH::buildProblem(MatrixXd& mat){
+void MagneticWCSPH::buildProblem(MatrixXd& mat){
     double Gamma = getGamma();
     cout << "getGamma" << endl;
     // room for paralellization
     cout << "num:" << getNumParticle() << endl;
     for (int particle = 0; particle <  getNumParticle(); ++particle) {
         for (int neighbor = 0; neighbor <  getNumParticle(); ++neighbor) {
-            
+
             Vector3d r_ik = getPos(particle) -  getPos(neighbor);
             double l_ik = r_ik.norm();
 
@@ -118,7 +93,7 @@ void MagneticSPH::buildProblem(MatrixXd& mat){
                             }
 
                         }
-                        
+
                         int idx1 = particle * 3 + j;
                         int idx2 = neighbor * 3 + l;
 
@@ -134,7 +109,7 @@ void MagneticSPH::buildProblem(MatrixXd& mat){
     }
 }
 
-VectorXd MagneticSPH::calculateMagneticForce(VectorXd &F) {
+VectorXd MagneticWCSPH::calculateMagneticForce(VectorXd &F) {
 
 //    cout << "calculateMagneticForce" << endl;
     MatrixXd mat(3 * getNumParticle(), 3 * getNumParticle());
@@ -154,6 +129,8 @@ VectorXd MagneticSPH::calculateMagneticForce(VectorXd &F) {
         Vector3d m_target = Vector3d(m(3*target), m(3*target + 1), m(3*target + 2));
         for (int source = 0; source < getNumParticle(); ++source) {
             Vector3d r = getPos(target) - getPos(source);
+            if(r.norm() < 0.000001)
+                continue;
             double l = r.norm();
             Vector3d m_source = Vector3d(m(3*source), m(3*source + 1), m(3*source + 2));
             if (l >= 4 * m_h) {
@@ -172,9 +149,9 @@ VectorXd MagneticSPH::calculateMagneticForce(VectorXd &F) {
             }
         }
         Vector3d targetForce = U * m_target;
-        F(3*target) = targetForce(0);
-        F(3*target+1) = targetForce(1);
-        F(3*target+2) = targetForce(2);
+        //F(3*target) = targetForce(0);
+        //F(3*target+1) = targetForce(1);
+        //F(3*target+2) = targetForce(2);
     }
 
     //External Force
@@ -193,7 +170,7 @@ VectorXd MagneticSPH::calculateMagneticForce(VectorXd &F) {
     return F;
 }
 
-Matrix3d MagneticSPH::objectToWorld (const Vector3d r) const {
+Matrix3d MagneticWCSPH::objectToWorld (const Vector3d r) const {
     Vector3d v3 = r.normalized();
     Vector3d v2 = Vector3d(0.0, 1.0, 0.0);
     if (fabs(v3.dot(v2) == 1.0)) {
@@ -206,12 +183,12 @@ Matrix3d MagneticSPH::objectToWorld (const Vector3d r) const {
     return R;
 }
 
-Matrix3d MagneticSPH::delH (const Vector3d r, const Vector3d m) const {
+Matrix3d MagneticWCSPH::delH (const Vector3d r, const Vector3d m) const {
     double l = r.norm();
     return (r.transpose() * m * Matrix3d::Identity() + r * m.transpose() + m * r.transpose()) * A(l) + (r * (r.transpose() * m * r.transpose())/r.norm()) * Aprime(l);
 }
 
-double MagneticSPH::w (const double q) const {
+double MagneticWCSPH::w (const double q) const {
     if (0 <= q && q < 1){
         return 0.25 * pow(2.0 - q, 3.0) - pow(1.0 - q, 3.0) / M_PI;
     } else if (1 <= q && q < 2){
@@ -221,30 +198,30 @@ double MagneticSPH::w (const double q) const {
     }
 }
 
-double MagneticSPH::w_avr (const double q) const {
+double MagneticWCSPH::w_avr (const double q) const {
     if (0 <= q && q < 1){
         return (15.0 * pow(q, 3) - 36.0 * pow(q, 1.0) + 40.0)/ (40.0 * M_PI) ;
     } else if (1 <= q && q < 2){
-        return -3.0/(4.0 * M_PI * pow(q, 3.0)) * (pow(q, 6.0)/6.0 - 6.0 * pow(q, 5.0)/5.0 
+        return -3.0/(4.0 * M_PI * pow(q, 3.0)) * (pow(q, 6.0)/6.0 - 6.0 * pow(q, 5.0)/5.0
         + 3.0 * pow(q, 4.0) - 8.0 * pow(q, 3.0) / 3.0+ 1.0/15.0);
     } else {
         return 3.0/(4.0 * pow(q, 3.0)* M_PI);
-    } 
+    }
 }
 
-double MagneticSPH::W (const double q) const {
+double MagneticWCSPH::W (const double q) const {
     return w(q/ m_h) / pow(m_h, 3.0);
 }
 
-double MagneticSPH::delta(const int i,const int j) const {
+double MagneticWCSPH::delta(const int i,const int j) const {
     return i == j ? 1.0 : 0.0;
 }
 
-double MagneticSPH::W_avr (const double q) const{
+double MagneticWCSPH::W_avr (const double q) const{
     return w_avr(q/ m_h) / pow(m_h, 3.0);
 }
 
-double MagneticSPH::wprime (const double q) const {
+double MagneticWCSPH::wprime (const double q) const {
     if (0 <= q && q < 1) {
         return (-0.75 * pow(2.0-q, 2.0) + 3.0 * pow(1.0-q, 2.0))/M_PI;
     } else if (1 <= q && q < 2) {
@@ -254,19 +231,19 @@ double MagneticSPH::wprime (const double q) const {
     }
 }
 
-double MagneticSPH::Wprime (const double q) const  {
+double MagneticWCSPH::Wprime (const double q) const  {
     return wprime(q/m_h)/pow(m_h, 4.0);
 }
 
-double MagneticSPH::A (const double q) const  {
+double MagneticWCSPH::A (const double q) const  {
     return (W(q) - W_avr(q))/pow(q, 2.0);
 }
 
-double MagneticSPH::Aprime (const double q) const  {
+double MagneticWCSPH::Aprime (const double q) const  {
     return 5.0 * (W(q) - W_avr(q))/pow(q, 3.0) - Wprime(q)/pow(q, 2.0);
 }
 
-double MagneticSPH::C1 (const double q) const  {
+double MagneticWCSPH::C1 (const double q) const  {
     VectorXd qexp(5);
     qexp << pow(q, 4.0), pow(q, 3.0), pow(q, 2.0), pow(q, 1.0), 1.0;
     VectorXd coeff(5);
@@ -282,7 +259,7 @@ double MagneticSPH::C1 (const double q) const  {
     return qexp.dot(coeff);
 }
 
-double MagneticSPH::C2 (const double q) const  {
+double MagneticWCSPH::C2 (const double q) const  {
     VectorXd qexp(5);
     qexp << pow(q, 4.0), pow(q, 3.0), pow(q, 2.0), pow(q, 1.0), 1.0;
     VectorXd coeff(5);
@@ -298,37 +275,37 @@ double MagneticSPH::C2 (const double q) const  {
     return qexp.dot(coeff);
 }
 
-double MagneticSPH::getMagneticSusceptibility() const{
+double MagneticWCSPH::getMagneticSusceptibility() const{
     return (double) _chi;
 }
 
-VectorXd MagneticSPH::getExternalB() const{
+VectorXd MagneticWCSPH::getExternalB() const{
     return m_Bext;
 }
 
-double MagneticSPH::getPermeability() const{
+double MagneticWCSPH::getPermeability() const{
     return (double) _mu_0;
 
 }
-double MagneticSPH::getGamma() const{
+double MagneticWCSPH::getGamma() const{
     double V = getVolume();
     double chi = getMagneticSusceptibility();
     return V * chi / (1 + chi);
 }
 
-void MagneticSPH::draw(Shader *shader) {
-    SPH::draw(shader);//return;
+void MagneticWCSPH::draw(Shader *shader) {
+    WCSPH::draw(shader);//return;
     static Shape shape = getLineShape();
     if(m_guess.size() == 0) {
         return;
     } else {
-        assert(m_guess.size() == m_particle_list.size() * 3);
+        assert(m_guess.size() == _fluid_ptcl_list.size() * 3);
     }
-    for(int i = 0; i < m_particle_list.size(); i++) {
+    for(int i = 0; i < _fluid_ptcl_list.size(); i++) {
         Eigen::Vector3f guess(m_guess[3 * i], m_guess[3 * i + 1], m_guess[3 * i + 2]);
         if(guess.norm() < 0.000001)
             continue;
-        auto& ptcl = m_particle_list[i];
+        auto& ptcl = _fluid_ptcl_list[i];
         Eigen::Affine3f mat = Eigen::Affine3f::Identity();
         Eigen::AngleAxis<float> aa;
         Quaternionf q;
