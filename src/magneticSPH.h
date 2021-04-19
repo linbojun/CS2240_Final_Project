@@ -12,7 +12,8 @@
 
 
 
-const float _chi = 0.1f;
+//const float _chi = 0.1f;
+const float _chi = 3.f;
 const float _mu_0 = 4 * M_PI * 1e-7;
 
 class MagneticSPH : public SPH
@@ -31,6 +32,7 @@ private:
 
     Eigen::VectorXd m_magneticForce;
     Eigen::VectorXd m_Bext;
+    MagneticInit m_Binit;
     double m_h;
 
     Eigen::VectorXd m_guess;

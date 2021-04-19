@@ -39,6 +39,26 @@ Eigen::Vector3d MagneticInit::getDipoleField(const Eigen::Vector3d &srcPos, cons
                                              const Eigen::Vector3d dipole) const{
     Vector3d r = targetPos - srcPos;
     double R = r.norm();
-    return 1e-7 * (3 * r * dipole.dot(r) / pow(R, 5.0)  - dipole / pow(R, 3.0));
+    return 1 / 4.0 / M_PI * (3 * r * dipole.dot(r) / pow(R, 5.0)  - dipole / pow(R, 3.0));
 
 }
+
+Eigen::Matrix3d MagneticInit::getMagneticFieldGrad (const Eigen::Vector3d &position) const{
+    Matrix3d grad;
+    for (const auto & src: m_src){
+        if (src.type == POINT_SOURCE){
+            double rm = position.dot(src.dipole);
+            double r = position.norm();
+            Matrix3d mrT = src.dipole * position.transpose();
+            Matrix3d rrT  = position * position.transpose();
+            grad += 3.0/ 4.0 * M_PI * (rm / pow(r, 5.0) * Matrix3d::Identity()
+                                       + (mrT + mrT.transpose())/pow(r, 5.0)
+                                       - 5 * rrT * rm / pow(r, 7.0));
+        }
+    }
+
+    return grad;
+
+}
+
+

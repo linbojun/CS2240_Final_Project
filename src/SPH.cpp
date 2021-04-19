@@ -103,9 +103,9 @@ SPH::SPH(int n, float radius) :
     //initialize position
 
     //m_posInit.addBox(Vector3f(0.5, 0.07, 0.5), 1, 0.14, 1);
-    //m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.1, Vector3f(0, -.1, 0));
+    m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.2, Vector3f(0, 0.0, 0));
 
-    m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 0.4, 0.2, 0.4);
+//    m_posInit.addBox(Vector3f(0.5, 0.3, 0.5), 0.4, 0.2, 0.4);
     //m_posInit.addSphere(Vector3f(0.5, 0.2, 0.5), 0.2, Vector3f(0.0, 0.0, 0.0));
 
     m_numParticles = m_posInit.getNumParticles();

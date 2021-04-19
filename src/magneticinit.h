@@ -12,7 +12,7 @@ typedef struct MagneticSource {
     Eigen::Vector3d position;
     Eigen::Vector3d dipole;
     //for constant field
-   Eigen::Vector3d B;
+    Eigen::Vector3d B;
 
     MagneticSource(MagneticType type, Eigen::Vector3d position, Eigen::Vector3d dipole, Eigen::Vector3d B):
         type(type),
@@ -33,6 +33,8 @@ public:
     MagneticInit();
 
     Eigen::Vector3d getMagneticField(const Eigen::Vector3d &position) const;
+
+    Eigen::Matrix3d getMagneticFieldGrad (const Eigen::Vector3d &position) const;
 
     void addPointSource(Eigen::Vector3d position, Eigen::Vector3d m);
 
