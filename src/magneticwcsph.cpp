@@ -17,7 +17,7 @@ MagneticWCSPH::MagneticWCSPH(int n, float radius, double h):
 
     m_Bext = VectorXd(3 * this->getNumParticle());
 //    Binit.addConstField(Vector3d(0.0, 2e-4, 0.0));
-    m_Binit.addPointSource(Vector3d(2, 0, 2), Vector3d(0.0, 2, 0.0));
+    m_Binit.addPointSource(Vector3d(0, -1, 0), Vector3d(0.0, 2, 0.0));
 
     for (int particle = 0; particle < getNumParticle(); ++particle){
         Vector3d bExt = m_Binit.getMagneticField(getPos(particle));
@@ -133,7 +133,8 @@ VectorXd MagneticWCSPH::calculateMagneticForce(VectorXd &F) {
                 continue;
             double l = r.norm();
             Vector3d m_source = Vector3d(m(3*source), m(3*source + 1), m(3*source + 2));
-            if (l >= 4 * m_h) {
+            if (true) {
+//            if (l >= 4 * m_h) {
                 U += mu_0 * delH(r, m_source);
             } else {
                 double q = l/m_h;
@@ -149,9 +150,9 @@ VectorXd MagneticWCSPH::calculateMagneticForce(VectorXd &F) {
             }
         }
         Vector3d targetForce = U * m_target;
-        //F(3*target) = targetForce(0);
-        //F(3*target+1) = targetForce(1);
-        //F(3*target+2) = targetForce(2);
+        F(3*target) = targetForce(0);
+        F(3*target+1) = targetForce(1);
+        F(3*target+2) = targetForce(2);
     }
 
     //External Force

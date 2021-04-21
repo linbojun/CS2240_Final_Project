@@ -4,7 +4,7 @@
 #include <mutex>
 #include "shapes.h"
 #ifndef _OPENMP
-static_assert (0, "no openmp");
+//static_assert (0, "no openmp");
 #endif
 
 using namespace Eigen;
