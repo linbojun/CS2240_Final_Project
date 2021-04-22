@@ -17,7 +17,7 @@ MagneticWCSPH::MagneticWCSPH(int n, float radius, double h):
 
     m_Bext = VectorXd(3 * this->getNumParticle());
 //    Binit.addConstField(Vector3d(0.0, 2e-4, 0.0));
-    m_Binit.addPointSource(Vector3d(0, -1, 0), Vector3d(0.0, 2, 0.0));
+    m_Binit.addPointSource(Vector3d(0.5, -1, 0.5), Vector3d(0.5, 2, 0.5));
 
     for (int particle = 0; particle < getNumParticle(); ++particle){
         Vector3d bExt = m_Binit.getMagneticField(getPos(particle));
@@ -35,7 +35,7 @@ MagneticWCSPH::MagneticWCSPH(int n, float radius, double h):
 void MagneticWCSPH::update_velocity_position()
 {
     if (m_t % m_subupdate == 0){
-        cout << "update Magnet" << endl;
+        //cout << "update Magnet" << endl;
         calculateMagneticForce(m_magneticForce);
     }
     //#pragma omp parallel for
@@ -44,7 +44,9 @@ void MagneticWCSPH::update_velocity_position()
         auto cur_fluid = _fluid_ptcl_list[i];
         //if(!cur_fluid->shouldSim)
         //    continue;
-        Vector3d totalForce = cur_fluid->netForce+ Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2));
+        Vector3d f = cur_fluid->netForce;
+        //cout << "f: " << f(0) <<", " << f(1) <<", " << f(2) <<endl;
+        Vector3d totalForce = cur_fluid->netForce+ 100 * Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2));
         Vector3d dvdt = totalForce / fluid_ptcl_mass;
         cur_fluid->velocity += dvdt * dt;
         updateParticlePos(i, cur_fluid->position + cur_fluid->velocity * dt);
@@ -67,10 +69,12 @@ void MagneticWCSPH::update_velocity_position()
 
 void MagneticWCSPH::buildProblem(MatrixXd& mat){
     double Gamma = getGamma();
-    cout << "getGamma" << endl;
+    //cout << "getGamma" << endl;
     // room for paralellization
-    cout << "num:" << getNumParticle() << endl;
+    //cout << "num:" << getNumParticle() << endl;
+    #pragma omp parallel for
     for (int particle = 0; particle <  getNumParticle(); ++particle) {
+        #pragma omp parallel for
         for (int neighbor = 0; neighbor <  getNumParticle(); ++neighbor) {
 
             Vector3d r_ik = getPos(particle) -  getPos(neighbor);
@@ -127,6 +131,7 @@ VectorXd MagneticWCSPH::calculateMagneticForce(VectorXd &F) {
     for (int target = 0; target < getNumParticle(); ++target) {
         Matrix3d U = Matrix3d::Zero();
         Vector3d m_target = Vector3d(m(3*target), m(3*target + 1), m(3*target + 2));
+        #pragma omp parallel for
         for (int source = 0; source < getNumParticle(); ++source) {
             Vector3d r = getPos(target) - getPos(source);
             if(r.norm() < 0.000001)
@@ -160,10 +165,11 @@ VectorXd MagneticWCSPH::calculateMagneticForce(VectorXd &F) {
         Vector3d m_target(m(3 * target), m(3 * target + 1), m(3 * target+ 2));
         Vector3d externalForce = mu_0 * m_Binit.getMagneticFieldGrad(getPos(target)) * m_target;
 
-        cout << "f:" << externalForce(0) << "," << externalForce(1) << "," << externalForce(2) << endl;
+        //cout << "f:" << externalForce(0) << "," << externalForce(1) << "," << externalForce(2) << endl;
         F(3*target) += externalForce(0);
         F(3*target+1) += externalForce(1);
         F(3*target+2) += externalForce(2);
+        //cout << "f: " << F(3*target) <<", " << F(3*target+1) <<", " << F(3*target + 2) << endl;
     }
 
 
@@ -303,9 +309,9 @@ void MagneticWCSPH::draw(Shader *shader) {
         assert(m_guess.size() == _fluid_ptcl_list.size() * 3);
     }
     for(int i = 0; i < _fluid_ptcl_list.size(); i++) {
-        Eigen::Vector3f guess(m_guess[3 * i], m_guess[3 * i + 1], m_guess[3 * i + 2]);
-        if(guess.norm() < 0.000001)
-            continue;
+        Eigen::Vector3f guess(10*m_magneticForce(3*i), 10*m_magneticForce(3*i+1), 10*m_magneticForce(3*i+2));//Vector3f::Zero();//(m_guess[3 * i], m_guess[3 * i + 1], m_guess[3 * i + 2]);
+//        if(guess.norm() < 0.000001)
+//            continue;
         auto& ptcl = _fluid_ptcl_list[i];
         Eigen::Affine3f mat = Eigen::Affine3f::Identity();
         Eigen::AngleAxis<float> aa;

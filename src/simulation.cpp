@@ -43,7 +43,7 @@ void Simulation::update(float time)
 
 void Simulation::draw(Shader *shader)
 {
-    std::cout << "Rendered frame!\n";
+    //std::cout << "Rendered frame!\n";
     m_sph->draw(shader);
     m_ground.draw(shader);
 }

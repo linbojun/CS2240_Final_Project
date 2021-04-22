@@ -230,7 +230,7 @@ void WCSPH::update(double time_step)
 
 void WCSPH::update_all_density_and_pressure_old()
 {
-    cout<<"update_all_density_and_pressure_old()"<<endl;
+    //cout<<"update_all_density_and_pressure_old()"<<endl;
     #pragma omp parallel for
     for(int i = 0; i < _fluid_ptcl_list.size(); i++)
     {
