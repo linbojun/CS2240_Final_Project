@@ -46,7 +46,7 @@ Eigen::Vector3d MagneticInit::getDipoleField(const Eigen::Vector3d &srcPos, cons
 }
 
 Eigen::Matrix3d MagneticInit::getMagneticFieldGrad (const Eigen::Vector3d &position) const{
-    Matrix3d grad;
+    Matrix3d grad = Matrix3d::Zero();
     for (const auto & src: m_src){
         if (src.type == POINT_SOURCE){
             double rm = position.dot(src.dipole);

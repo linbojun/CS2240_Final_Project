@@ -14,8 +14,9 @@ const float _mu_0 = 4 * M_PI * 1e-7;
 MagneticWCSPH::MagneticWCSPH(int n, float radius, double h):
     WCSPH(radius, 2), m_h(h), m_subupdate(5), m_Binit()
 {
-
-    m_Bext = VectorXd(3 * this->getNumParticle());
+    m_isFirst = true;
+    m_Bext = VectorXd::Zero(3 * this->getNumParticle());
+    m_guess = VectorXd::Zero(3 * this->getNumParticle());
 //    Binit.addConstField(Vector3d(0.0, 2e-4, 0.0));
     m_Binit.addPointSource(Vector3d(0, -1, 0), Vector3d(0.0, 2, 0.0));
 
@@ -27,8 +28,9 @@ MagneticWCSPH::MagneticWCSPH(int n, float radius, double h):
     }
 
 
-    m_magneticForce = VectorXd(3 * this->getNumParticle());
+    m_magneticForce = VectorXd::Zero(3 * this->getNumParticle());
     calculateMagneticForce(m_magneticForce);
+
 
 }
 
@@ -256,6 +258,8 @@ double MagneticWCSPH::C1 (const double q) const  {
         coeff << -1.096e-9, 9.770e-9, -2.547e-8, 2.650e-9, 5.007e-8;
     } else if (q >=3 && q < 4) {
         coeff << 3.799e-10, -6.263e-9, 3.947e-8, -1.135e-7, 1.274e-7;
+    } else {
+        assert(false);
     }
     return qexp.dot(coeff);
 }
@@ -272,6 +276,8 @@ double MagneticWCSPH::C2 (const double q) const  {
         coeff << 3.504e-9, -5.259e-8, 2.788e-7, -6.241e-7, 4.918e-7;
     } else if (q >=3 && q < 4) {
         coeff << 7.334e-10, -9.588e-9, 4.379e-8, -7.480e-8, 2.341e-8;
+    } else {
+        assert(false);
     }
     return qexp.dot(coeff);
 }
