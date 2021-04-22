@@ -12,7 +12,7 @@ const float _mu_0 = 4 * M_PI * 1e-7;
 
 // TODO: n, radius are fully ignored
 MagneticWCSPH::MagneticWCSPH(int n, float radius, double h):
-    WCSPH(radius, 4), m_h(h), m_subupdate(5), m_Binit()
+    WCSPH(radius, 2), m_h(h), m_subupdate(5), m_Binit()
 {
 
     m_Bext = VectorXd(3 * this->getNumParticle());
@@ -44,7 +44,7 @@ void MagneticWCSPH::update_velocity_position()
         auto cur_fluid = _fluid_ptcl_list[i];
         //if(!cur_fluid->shouldSim)
         //    continue;
-        Vector3d totalForce = cur_fluid->netForce + Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2));
+        Vector3d totalForce = cur_fluid->netForce+ Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2));
         Vector3d dvdt = totalForce / fluid_ptcl_mass;
         cur_fluid->velocity += dvdt * dt;
         updateParticlePos(i, cur_fluid->position + cur_fluid->velocity * dt);
