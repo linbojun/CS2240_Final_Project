@@ -61,7 +61,7 @@ WCSPH::WCSPH(double radius, double spacing):
     // bounds.reset();
 
     kernel.init(kernel_radius);
-    m_posInit.addBox(Vector3f(0.5, 0.1, 0.5), 0.2, 0.2, 0.2);
+    m_posInit.addBox(Vector3f(0.5, 0.1, 0.5), 0.4, 0.4, 0.4);
     int npBox = m_posInit.getNumParticles();
     //m_posInit.setRadius(ptcl_radius*1.2);
     //m_posInit.addSphere(Vector3f(0.5, 0.8, 0.5), 0.08, Vector3f(0, 0, 0));

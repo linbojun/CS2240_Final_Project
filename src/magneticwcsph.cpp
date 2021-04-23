@@ -12,13 +12,13 @@ const float _mu_0 = 4 * M_PI * 1e-7;
 
 // TODO: n, radius are fully ignored
 MagneticWCSPH::MagneticWCSPH(int n, float radius, double h):
-    WCSPH(radius, 1), m_h(h), m_subupdate(5), m_Binit()
+    WCSPH(radius, 2), m_h(h), m_subupdate(5), m_Binit()
 {
     m_isFirst = true;
     m_Bext = VectorXd::Zero(3 * this->getNumParticle());
     m_guess = VectorXd::Zero(3 * this->getNumParticle());
 //    Binit.addConstField(Vector3d(0.0, 2e-4, 0.0));
-    m_Binit.addPointSource(Vector3d(0.5, -1, 0.5), Vector3d(0, 2, 0));
+    m_Binit.addPointSource(Vector3d(0.5, -1, 0.5), Vector3d(0, -2, 0));
 
     for (int particle = 0; particle < getNumParticle(); ++particle){
         Vector3d bExt = m_Binit.getMagneticField(getPos(particle));
@@ -48,7 +48,7 @@ void MagneticWCSPH::update_velocity_position()
         //    continue;
         Vector3d f = cur_fluid->netForce;
         //cout << "f: " << f(0) <<", " << f(1) <<", " << f(2) <<endl;
-        Vector3d totalForce = cur_fluid->netForce+ 1000 * Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2));
+        Vector3d totalForce = cur_fluid->netForce+ 10000 * Vector3d(m_magneticForce(3*i), m_magneticForce(3*i+1), m_magneticForce(3*i+2));
         Vector3d dvdt = totalForce / fluid_ptcl_mass;
         cur_fluid->velocity += dvdt * dt;
         updateParticlePos(i, cur_fluid->position + cur_fluid->velocity * dt);
