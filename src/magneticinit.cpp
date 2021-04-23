@@ -50,10 +50,11 @@ Eigen::Matrix3d MagneticInit::getMagneticFieldGrad (const Eigen::Vector3d &posit
     Matrix3d grad = Matrix3d::Zero();
     for (const auto & src: m_src){
         if (src.type == POINT_SOURCE){
-            double rm = position.dot(src.dipole);
-            double r = position.norm();
-            Matrix3d mrT = src.dipole * position.transpose();
-            Matrix3d rrT  = position * position.transpose();
+            Vector3d dist = position - src.position;
+            double rm = dist.dot(src.dipole);
+            double r = dist.norm();
+            Matrix3d mrT = src.dipole * dist.transpose();
+            Matrix3d rrT  = dist * dist.transpose();
             grad += 3.0/ 4.0 * M_PI * (rm / pow(r, 5.0) * Matrix3d::Identity()
                                        + (mrT + mrT.transpose())/pow(r, 5.0)
                                        - 5 * rrT * rm / pow(r, 7.0));
